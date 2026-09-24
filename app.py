@@ -375,11 +375,18 @@ def parse_pnl(text):
         joined_emails = ", ".join(emails_list) if emails_list else ""
         primary_lang = "MN" if "MN" in langs_list else ("EN" if "EN" in langs_list else "N/A")
 
+        status = pax["Status Code"]
         missing_reasons = []
-        if pax["Status Code"] == "RR":
-            missing_reasons.append("RR статус")
+
+        # HL, UC, TL статусуудыг дутуу мэдээлэлд тооцно
+        if status in ["HL", "UC", "TL"]:
+            missing_reasons.append(f"{status} статус")
+        
+        # Имэйл хаяггүй
         if not joined_emails:
             missing_reasons.append("Имэйл хаяггүй")
+            
+        # Тийзийн дугааргүй
         if pax["TicketNo"] == "-":
             missing_reasons.append("TKT дугааргүй")
 
