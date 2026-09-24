@@ -11,18 +11,193 @@ import streamlit as st
 # ============================================================
 
 AIRPORT_NAMES = {
+    # ==========================================
+    # 1. МОНГОЛ УЛС (Орон нутаг & Олон улс)
+    # ==========================================
     "UBN": {"MN": "Улаанбаатар", "EN": "Ulaanbaatar"},
-    "NRT": {"MN": "Токио", "EN": "Tokyo"},
-    "HND": {"MN": "Токио", "EN": "Tokyo"},
-    "FRA": {"MN": "Франкфурт", "EN": "Frankfurt"},
-    "ICN": {"MN": "Сөүл", "EN": "Seoul"},
-    "PEK": {"MN": "Бээжин", "EN": "Beijing"},
-    "PKX": {"MN": "Бээжин", "EN": "Beijing"},
-    "BKK": {"MN": "Бангкок", "EN": "Bangkok"},
+    "ULN": {"MN": "Улаанбаатар (Буянт-Ухаа)", "EN": "Ulaanbaatar (Old)"},
+    "HVD": {"MN": "Ховд", "EN": "Khovd"},
+    "ULG": {"MN": "Өлгий", "EN": "Olgii"},
+    "UGA": {"MN": "Улаангом", "EN": "Ulaangom"},
+    "UNR": {"MN": "Өндөрхаан (Чингис город)", "EN": "Undurkhaan"},
+    "DLZ": {"MN": "Даланзадгад", "EN": "Dalanzadgad"},
+    "LTI": {"MN": "Алтай", "EN": "Altai"},
+    "MWR": {"MN": "Мөрөн", "EN": "Moron"},
+    "UZZ": {"MN": "Улиастай (Донной)", "EN": "Uliastai"},
+    "COQ": {"MN": "Чойбалсан", "EN": "Choibalsan"},
+    "BYN": {"MN": "Баянхонгор", "EN": "Bayankhongor"},
+    "EAV": {"MN": "Алтат (Оюут толгой)", "EN": "Khanbumbat / Oyu Tolgoi"},
+    "THN": {"MN": "Таван толгой", "EN": "Tavan Tolgoi"},
+    "TST": {"MN": "Цагаан суварга", "EN": "Tsagaan Suvarga"},
+    "PST": {"MN": "Баян-Өндөр (Орхон)", "EN": "Erdenet"},
+    "TXN": {"MN": "Ташаанта", "EN": "Tashaanta"},
+
+    # ==========================================
+    # 2. ЗҮҮН АЗИ (East Asia)
+    # ==========================================
+    # БНСУ (South Korea)
+    "ICN": {"MN": "Сөүл (Инчон)", "EN": "Seoul (Incheon)"},
+    "GMP": {"MN": "Сөүл (Кимпо)", "EN": "Seoul (Gimpo)"},
     "PUS": {"MN": "Пусан", "EN": "Busan"},
-    "IST": {"MN": "Истанбул", "EN": "Istanbul"},
-    "SVO": {"MN": "Москва", "EN": "Moscow"},
+    "CJU": {"MN": "Чежу", "EN": "Jeju"},
+    "TAE": {"MN": "Тэгү", "EN": "Daegu"},
+    "CJJ": {"MN": "Чонжу", "EN": "Cheongju"},
+
+    # Япон (Japan)
+    "NRT": {"MN": "Токио (Нарита)", "EN": "Tokyo (Narita)"},
+    "HND": {"MN": "Токио (Ханеда)", "EN": "Tokyo (Haneda)"},
+    "KIX": {"MN": "Осака (Кансай)", "EN": "Osaka (Kansai)"},
+    "ITM": {"MN": "Осака (Итами)", "EN": "Osaka (Itami)"},
+    "NGO": {"MN": "Нагоя", "EN": "Nagoya"},
+    "CTS": {"MN": "Саппоро", "EN": "Sapporo"},
+    "FUK": {"MN": "Фукуока", "EN": "Fukuoka"},
+    "OKA": {"MN": "Окинава", "EN": "Okinawa"},
+
+    # БНХАУ (China)
+    "PEK": {"MN": "Бээжин (Капитал)", "EN": "Beijing (Capital)"},
+    "PKX": {"MN": "Бээжин (Дашин)", "EN": "Beijing (Daxing)"},
+    "PVG": {"MN": "Шанхай (Пудон)", "EN": "Shanghai (Pudong)"},
+    "SHA": {"MN": "Шанхай (Хунчяо)", "EN": "Shanghai (Hongqiao)"},
+    "CAN": {"MN": "Гуанжоу", "EN": "Guangzhou"},
+    "SZX": {"MN": "Шэньчжэнь", "EN": "Shenzhen"},
+    "CTU": {"MN": "Чэнду", "EN": "Chengdu"},
+    "CKG": {"MN": "Чунцин", "EN": "Chongqing"},
+    "KMG": {"MN": "Куньмин", "EN": "Kunming"},
+    "XIY": {"MN": "Сиань", "EN": "Xi'an"},
+    "HET": {"MN": "Хөх хот", "EN": "Hohhot"},
+    "DSN": {"MN": "Ордос", "EN": "Ordos"},
+    "EER": {"MN": "Эрээн", "EN": "Erenhot"},
+    "SYX": {"MN": "Санья (Хайнань)", "EN": "Sanya (Hainan)"},
+    "HAK": {"MN": "Хайкоу (Хайнань)", "EN": "Haikou (Hainan)"},
     "HKG": {"MN": "Хонконг", "EN": "Hong Kong"},
+    "MFM": {"MN": "Макао", "EN": "Macau"},
+    "TPE": {"MN": "Тайбэй (Таоюань)", "EN": "Taipei (Taoyuan)"},
+
+    # ==========================================
+    # 3. ЗҮҮН ӨМНӨД АЗИ (Southeast Asia)
+    # ==========================================
+    "BKK": {"MN": "Бангкок (Суварнабхуми)", "EN": "Bangkok (Suvarnabhumi)"},
+    "DMK": {"MN": "Бангкок (Дон Мыанг)", "EN": "Bangkok (Don Mueang)"},
+    "HKT": {"MN": "Пүкэт", "EN": "Phuket"},
+    "SIN": {"MN": "Сингапур (Чанги)", "EN": "Singapore (Changi)"},
+    "KUL": {"MN": "Куала Лумпур", "EN": "Kuala Lumpur"},
+    "SGN": {"MN": "Хо Ши Мин", "EN": "Ho Chi Minh City"},
+    "HAN": {"MN": "Ханой", "EN": "Hanoi"},
+    "DAD": {"MN": "Да Нанг", "EN": "Da Nang"},
+    "PQC": {"MN": "Фү Куок", "EN": "Phu Quoc"},
+    "MNL": {"MN": "Манила", "EN": "Manila"},
+    "CEB": {"MN": "Себу", "EN": "Cebu"},
+    "CGK": {"MN": "Жакарта", "EN": "Jakarta"},
+    "DPS": {"MN": "Бали (Денпасар)", "EN": "Bali (Denpasar)"},
+
+    # ==========================================
+    # 4. ЭНЭТХЭГ & ТӨВ АЗИ (South & Central Asia)
+    # ==========================================
+    "DEL": {"MN": "Нью Дели", "EN": "New Delhi"},
+    "BOM": {"MN": "Мумбай", "EN": "Mumbai"},
+    "ALA": {"MN": "Алматы", "EN": "Almaty"},
+    "NQZ": {"MN": "Астана", "EN": "Astana"},
+    "TAS": {"MN": "Ташкент", "EN": "Tashkent"},
+    "FRU": {"MN": "Бишкек", "EN": "Bishkek"},
+
+    # ==========================================
+    # 5. ОЙРХИ ДОРНОД (Middle East)
+    # ==========================================
+    "DXB": {"MN": "Дубай", "EN": "Dubai"},
+    "DWC": {"MN": "Дубай (Аль-Мактум)", "EN": "Dubai (Al Maktoum)"},
+    "AUH": {"MN": "Абу Даби", "EN": "Abu Dhabi"},
+    "DOH": {"MN": "Доха", "EN": "Doha"},
+    "IST": {"MN": "Истанбул", "EN": "Istanbul"},
+    "SAW": {"MN": "Истанбул (Сабиха Гөкчен)", "EN": "Istanbul (Sabiha Gokcen)"},
+    "AYT": {"MN": "Анталья", "EN": "Antalya"},
+    "MCT": {"MN": "Маскат", "EN": "Muscat"},
+    "RUH": {"MN": "Эр-Рияд", "EN": "Riyadh"},
+
+    # ==========================================
+    # 6. ОРОСЫН ХОЛБООНЫ УЛС (Russia)
+    # ==========================================
+    "SVO": {"MN": "Москва (Шереметьево)", "EN": "Moscow (Sheremetyevo)"},
+    "DME": {"MN": "Москва (Домодедово)", "EN": "Moscow (Domodedovo)"},
+    "VKO": {"MN": "Москва (Внуково)", "EN": "Moscow (Vnukovo)"},
+    "LED": {"MN": "Санкт-Петербург", "EN": "St. Petersburg"},
+    "IKT": {"MN": "Иркутск", "EN": "Irkutsk"},
+    "UUD": {"MN": "Улаан-Үд", "EN": "Ulan-Ude"},
+    "VVO": {"MN": "Владивосток", "EN": "Vladivostok"},
+    "OVB": {"MN": "Новосибирск", "EN": "Novosibirsk"},
+    "KJA": {"MN": "Красноярск", "EN": "Krasnoyarsk"},
+    "KGD": {"MN": "Калининград", "EN": "Kaliningrad"},
+
+    # ==========================================
+    # 7. ЕВРОП & ИРЛАНД (Europe & Ireland)
+    # ==========================================
+    # Их Британи & Ирланд (UK & Ireland)
+    "LHR": {"MN": "Лондон (Хитроу)", "EN": "London (Heathrow)"},
+    "LGW": {"MN": "Лондон (Гатвик)", "EN": "London (Gatwick)"},
+    "STN": {"MN": "Лондон (Станстед)", "EN": "London (Stansted)"},
+    "LTN": {"MN": "Лондон (Лутон)", "EN": "London (Luton)"},
+    "MAN": {"MN": "Манчестер", "EN": "Manchester"},
+    "BHX": {"MN": "Бирмингем", "EN": "Birmingham"},
+    "EDI": {"MN": "Эдинбург", "EN": "Edinburgh"},
+    "DUB": {"MN": "Дублин", "EN": "Dublin"},
+    "ORK": {"MN": "Корг", "EN": "Cork"},
+    "SNN": {"MN": "Шэннон", "EN": "Shannon"},
+
+    # Скандинавын орнууд (Nordic)
+    "GOT": {"MN": "Гётеборг", "EN": "Gothenburg"},
+    "ARN": {"MN": "Стокгольм", "EN": "Stockholm"},
+    "CPH": {"MN": "Копенгаген", "EN": "Copenhagen"},
+    "OSL": {"MN": "Осло", "EN": "Oslo"},
+    "HEL": {"MN": "Хельсинки", "EN": "Helsinki"},
+
+    # Бусад Европ
+    "FRA": {"MN": "Франкфурт", "EN": "Frankfurt"},
+    "MUC": {"MN": "Мюнхен", "EN": "Munich"},
+    "BER": {"MN": "Берлин", "EN": "Berlin"},
+    "CDG": {"MN": "Парис (Шарль де Голль)", "EN": "Paris (Charles de Gaulle)"},
+    "ORY": {"MN": "Парис (Орли)", "EN": "Paris (Orly)"},
+    "AMS": {"MN": "Амстердам", "EN": "Amsterdam"},
+    "ZRH": {"MN": "Цюрих", "EN": "Zurich"},
+    "VIE": {"MN": "Вена", "EN": "Vienna"},
+    "PRG": {"MN": "Прага", "EN": "Prague"},
+    "FCO": {"MN": "Ром", "EN": "Rome"},
+    "MXP": {"MN": "Милан (Мальпенса)", "EN": "Milan (Malpensa)"},
+    "MAD": {"MN": "Мадрид", "EN": "Madrid"},
+    "BCN": {"MN": "Барселона", "EN": "Barcelona"},
+    "ATH": {"MN": "Афин", "EN": "Athens"},
+    "WAW": {"MN": "Варшав", "EN": "Warsaw"},
+    "BUD": {"MN": "Будапешт", "EN": "Budapest"},
+
+    # ==========================================
+    # 8. ХОЁР БҮЛДИЙН АМЕРИК (North & South America)
+    # ==========================================
+    "JFK": {"MN": "Нью-Йорк (JFK)", "EN": "New York (JFK)"},
+    "EWR": {"MN": "Нью-Йорк (Ньюарк)", "EN": "New York (Newark)"},
+    "LAX": {"MN": "Лос-Анжелес", "EN": "Los Angeles"},
+    "SFO": {"MN": "Сан Франциско", "EN": "San Francisco"},
+    "ORD": {"MN": "Чикаго (О'Хара)", "EN": "Chicago (O'Hare)"},
+    "SEA": {"MN": "Сиэтл", "EN": "Seattle"},
+    "MIA": {"MN": "Майами", "EN": "Miami"},
+    "IAD": {"MN": "Вашингтон (Даллес)", "EN": "Washington (Dulles)"},
+    "YVR": {"MN": "Ванкувер", "EN": "Vancouver"},
+    "YYZ": {"MN": "Торонто", "EN": "Toronto"},
+    "GRU": {"MN": "Сан Пауло", "EN": "Sao Paulo"},
+    "EZE": {"MN": "Буэнос-Айрес", "EN": "Buenos Aires"},
+
+    # ==========================================
+    # 9. АВСТРАЛИ & ДАЛАЙН ОРОН (Australia & Pacific)
+    # ==========================================
+    "SYD": {"MN": "Сидней", "EN": "Sydney"},
+    "MEL": {"MN": "Мельбурн", "EN": "Melbourne"},
+    "BNE": {"MN": "Брисбен", "EN": "Brisbane"},
+    "PER": {"MN": "Перт", "EN": "Perth"},
+    "AKL": {"MN": "Окленд", "EN": "Auckland"},
+
+    # ==========================================
+    # 10. АФРИК (Africa)
+    # ==========================================
+    "CAI": {"MN": "Каир", "EN": "Cairo"},
+    "JNB": {"MN": "Йоханнесбург", "EN": "Johannesburg"},
+    "CPT": {"MN": "Кейптаун", "EN": "Cape Town"},
 }
 
 # ============================================================
