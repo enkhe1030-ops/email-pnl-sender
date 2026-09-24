@@ -237,8 +237,8 @@ def parse_pnl(text):
 # TEMPLATE GENERATOR
 # ============================================================
 
-def generate_email_template_base(target_lang, flight_info):
-    """ Анхны загвар текстийг хувьсагчуудтай ({PAX_NAME}, {PNR}, {TICKET_NO}) нь бэлтгэж өгнө """
+def generate_email_text_base(target_lang, flight_info):
+    """ Энгийн текст (Plain text) хэлбэрийн загвар """
     pax_name = "{PAX_NAME}"
     pnr_code = "{PNR}"
     tkt_no = "{TICKET_NO}"
@@ -257,90 +257,46 @@ def generate_email_template_base(target_lang, flight_info):
     if target_lang == "MN":
         if status_type == "CANCEL":
             subject = f"{mn_dot_date} –ний {city_title} {flt_no} нислэг цуцлагдсан тухай мэдэгдэл"
-            html_body = f"""<div style="font-family: Calibri, sans-serif; font-size: 11pt;">
-Хүндэт {pax_name},<br><br>
-Таны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэг <b>цуцлагдсан</b> болохыг үүгээр мэдэгдэж байна.<br><br>
-<b>ЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:</b><br>
-• Зорчигчийн нэр: {pax_name}<br>
-• Захиалгын дугаар (PNR): {pnr_code}<br>
-• Тийзийн дугаар: {tkt_no}<br><br>
-<b>ЦУЦЛАГДСАН НИСЛЭГИЙН МЭДЭЭЛЭЛ:</b><br>
-• Нислэг: {flt_no}<br>
-• Огноо: {flt_date}<br>
-• Чиглэл: {raw_route}"""
-            if dep_time: html_body += f"<br>• Нисэх цаг: {dep_time}"
-            if arr_time: html_body += f"<br>• Буух цаг: {arr_time}"
-            if reason: html_body += f"<br>• Шалтгаан: {reason}"
-            html_body += "<br><br>Тийз буцаалт болон өөр өдрийн нислэгээр тийзээ өөрчилж баталгаажуулах талаар тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.<br><br>Дээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.<br><br>Хүндэтгэсэн,<br>МИАТ ТӨХК</div>"
-            
-            plain_body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэг цуцлагдсан болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nЦУЦЛАГДСАН НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}\n\nХүндэтгэсэн,\nМИАТ ТӨХК"
+            body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэг цуцлагдсан болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nЦУЦЛАГДСАН НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}"
+            if dep_time: body += f"\n• Нисэх цаг: {dep_time}"
+            if arr_time: body += f"\n• Буух цаг: {arr_time}"
+            if reason: body += f"\n• Шалтгаан: {reason}"
+            body += "\n\nТийз буцаалт болон өөр өдрийн нислэгээр тийзээ өөрчилж баталгаажуулах талаар тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.\n\nДээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.\n\nХүндэтгэсэн,\nМИАТ ТӨХК"
         else:
             subject = f"{mn_dot_date} –ний {city_title} {flt_no} нислэгийн хуваарийн өөрчлөлтийн тухай мэдэгдэл"
-            html_body = f"""<div style="font-family: Calibri, sans-serif; font-size: 11pt;">
-Хүндэт {pax_name},<br><br>
-Таны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэгийн <b>цагийн хуваарьт өөрчлөлт</b> орсон болохыг үүгээр мэдэгдэж байна.<br><br>
-<b>ЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:</b><br>
-• Зорчигчийн нэр: {pax_name}<br>
-• Захиалгын дугаар (PNR): {pnr_code}<br>
-• Тийзийн дугаар: {tkt_no}<br><br>
-<b>ШИНЭ НИСЛЭГИЙН МЭДЭЭЛЭЛ:</b><br>
-• Нислэг: {flt_no}<br>
-• Огноо: {flt_date}<br>
-• Чиглэл: {raw_route}"""
-            if dep_time: html_body += f"<br>• Нисэх цаг: {dep_time}"
-            if arr_time: html_body += f"<br>• Буух цаг: {arr_time}"
-            html_body += "<br><br>Таны тийзийн төлөв байдал болон шинэ нислэгийн мэдээллийг баталгаажуулахын тулд тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.<br><br>Дээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүндэтгэн хүлцэл өчье.<br><br>Хүндэтгэсэн,<br>МИАТ ТӨХК</div>"
-            
-            plain_body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэгийн цагийн хуваарьт өөрчлөлт орсон болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nШИНЭ НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}\n\nХүндэтгэсэн,\nМИАТ ТӨХК"
-
+            body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэгийн цагийн хуваарьт өөрчлөлт орсон болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nШИНЭ НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}"
+            if dep_time: body += f"\n• Нисэх цаг: {dep_time}"
+            if arr_time: body += f"\n• Буух цаг: {arr_time}"
+            body += "\n\nТаны тийзийн төлөв байдал болон шинэ нислэгийн мэдээллийг баталгаажуулахын тулд тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.\n\nДээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.\n\nХүндэтгэсэн,\nМИАТ ТӨХК"
     else: # EN
         if status_type == "CANCEL":
             subject = f"Flight Cancellation Notification - {flt_no} ({city_title}) - {en_date}"
-            html_body = f"""<div style="font-family: Calibri, sans-serif; font-size: 11pt;">
-Dear {pax_name},<br><br>
-We regret to inform you that your flight {flt_no} {full_route_display}, scheduled for {en_date}, has been <b>cancelled</b>.<br><br>
-<b>PASSENGER DETAILS:</b><br>
-- Passenger Name: {pax_name}<br>
-- Booking Reference (PNR): {pnr_code}<br>
-- Ticket Number: {tkt_no}<br><br>
-<b>CANCELLED FLIGHT DETAILS:</b><br>
-- Flight: {flt_no}<br>
-- Date: {flt_date}<br>
-- Route: {raw_route}"""
-            if dep_time: html_body += f"<br>- Departure Time: {dep_time}"
-            if arr_time: html_body += f"<br>- Arrival Time: {arr_time}"
-            if reason: html_body += f"<br>- Reason: {reason}"
-            html_body += "<br><br>For ticket refund or to change and confirm your ticket for a flight on another date, please contact your travel agent or ticket issuing office as soon as possible.<br><br>Best regards,<br>MIAT Mongolian Airlines</div>"
-            
-            plain_body = f"Dear {pax_name},\n\nWe regret to inform you that your flight {flt_no} {full_route_display}, scheduled for {en_date}, has been cancelled.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nBest regards,\nMIAT Mongolian Airlines"
+            body = f"Dear {pax_name},\n\nWe regret to inform you that your flight {flt_no} {full_route_display}, scheduled for {en_date}, has been cancelled.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nCANCELLED FLIGHT DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}\n- Route: {raw_route}"
+            if dep_time: body += f"\n- Departure Time: {dep_time}"
+            if arr_time: body += f"\n- Arrival Time: {arr_time}"
+            if reason: body += f"\n- Reason: {reason}"
+            body += "\n\nFor ticket refund or to change and confirm your ticket for a flight on another date, please contact your travel agent or ticket issuing office as soon as possible.\n\nBest regards,\nMIAT Mongolian Airlines"
         else:
             subject = f"Flight Schedule Change Notification - {flt_no} ({city_title}) – {en_date}"
-            html_body = f"""<div style="font-family: Calibri, sans-serif; font-size: 11pt;">
-Dear {pax_name},<br><br>
-We regret to inform you of a <b>schedule change</b> for your flight {flt_no} {full_route_display} on {en_date}.<br><br>
-<b>PASSENGER DETAILS:</b><br>
-- Passenger Name: {pax_name}<br>
-- Booking Reference (PNR): {pnr_code}<br>
-- Ticket Number: {tkt_no}<br><br>
-<b>NEW FLIGHT SCHEDULE DETAILS:</b><br>
-- Flight: {flt_no}<br>
-- Date: {flt_date}<br>
-- Route: {raw_route}"""
-            if dep_time: html_body += f"<br>- Departure Time: {dep_time}"
-            if arr_time: html_body += f"<br>- Arrival Time: {arr_time}"
-            html_body += "<br><br>Please contact your travel agent or issuing office as soon as possible to confirm your flight details.<br><br>Best regards,<br>MIAT Mongolian Airlines</div>"
-            
-            plain_body = f"Dear {pax_name},\n\nWe regret to inform you of a schedule change for your flight {flt_no} {full_route_display} on {en_date}.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nBest regards,\nMIAT Mongolian Airlines"
+            body = f"Dear {pax_name},\n\nWe regret to inform you of a schedule change for your flight {flt_no} {full_route_display} on {en_date}.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nNEW FLIGHT SCHEDULE DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}\n- Route: {raw_route}"
+            if dep_time: body += f"\n- Departure Time: {dep_time}"
+            if arr_time: body += f"\n- Arrival Time: {arr_time}"
+            body += "\n\nPlease contact your travel agent or issuing office as soon as possible to confirm your flight details.\n\nBest regards,\nMIAT Mongolian Airlines"
 
-    return subject, plain_body, html_body
+    return subject, body
 
-def render_custom_template(template_html, record):
-    """ Template текстийг тухайн зорчигчийн бодит мэдээллээр сольно """
+def text_to_html(plain_text):
+    """ Энгийн текстийг гоё хэлбэртэй HTML руу хөрвүүлнэ """
+    formatted = plain_text.replace('\n', '<br>')
+    formatted = re.sub(r'(\b[A-Z-0-9А-ЯӨҮөү\s]+:)', r'<b>\1</b>', formatted)
+    return f'<div style="font-family: Calibri, sans-serif; font-size: 11pt; line-height: 1.5;">{formatted}</div>'
+
+def render_custom_template(template_text, record):
     pax_name = record.get('Passenger Name', '') if record else "{PAX_NAME}"
     pnr_code = record.get('PNR', '') if record else "{PNR}"
     tkt_no = record.get('TicketNo', '') if record else "{TICKET_NO}"
 
-    rendered = template_html.replace("{PAX_NAME}", pax_name)
+    rendered = template_text.replace("{PAX_NAME}", pax_name)
     rendered = rendered.replace("{PNR}", pnr_code)
     rendered = rendered.replace("{TICKET_NO}", tkt_no)
     return rendered
@@ -376,7 +332,7 @@ if "missing_records" not in st.session_state:
 if "pnl_text" not in st.session_state:
     st.session_state.pnl_text = ""
 if "custom_templates" not in st.session_state:
-    st.session_state.custom_templates = {"MN": {"subject": "", "html": ""}, "EN": {"subject": "", "html": ""}}
+    st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = False
 
@@ -407,7 +363,7 @@ with col1:
         st.session_state.records = []
         st.session_state.missing_records = []
         st.session_state.pnl_text = ""
-        st.session_state.custom_templates = {"MN": {"subject": "", "html": ""}, "EN": {"subject": "", "html": ""}}
+        st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
         st.session_state.edit_mode = False
         st.rerun()
 
@@ -450,6 +406,17 @@ tab1, tab2, tab3 = st.tabs(["📋 Идэвхтэй Зорчигчид", "⚠️ 
 
 with tab1:
     if st.session_state.records:
+        col_s1, col_s2, col_s3 = st.columns([1, 1, 3])
+        if col_s1.button("☑️ Бүгдийг сонгох"):
+            for r in st.session_state.records:
+                r["Selected"] = True
+            st.rerun()
+
+        if col_s2.button("🔲 Бүгдийг болиулах"):
+            for r in st.session_state.records:
+                r["Selected"] = False
+            st.rerun()
+
         df_valid = pd.DataFrame(st.session_state.records)
         cols_to_show = ["Selected", "SeqNo", "PNLNo", "Passenger Name", "PNR", "StatusCode", "BookingDate", "TicketNo", "Email", "Language", "SendStatus"]
         
@@ -460,9 +427,11 @@ with tab1:
             },
             disabled=["SeqNo", "PNLNo", "Passenger Name", "PNR", "StatusCode", "BookingDate", "TicketNo", "Email", "Language", "SendStatus"],
             hide_index=True,
-            use_container_width=True
+            use_container_width=True,
+            key="passenger_editor"
         )
         
+        # Сонголтын төлвийг зөв синк хийх
         for idx, row in edited_df.iterrows():
             st.session_state.records[idx]["Selected"] = row["Selected"]
 
@@ -493,33 +462,34 @@ with tab3:
             st.rerun()
     with col_p3:
         st.write("")
-        if st.session_state.custom_templates[preview_lang]["html"]:
+        if st.session_state.custom_templates[preview_lang]["text"]:
             if st.button("🔄 Анхны хувилбар"):
-                st.session_state.custom_templates[preview_lang] = {"subject": "", "html": ""}
+                st.session_state.custom_templates[preview_lang] = {"subject": "", "text": ""}
                 st.session_state.edit_mode = False
                 st.rerun()
 
-    # Анхны загвар текстийг авах ({PAX_NAME}, {PNR}, {TICKET_NO} хувьсагчуудтайгаа)
-    orig_subj, orig_plain, orig_html = generate_email_template_base(preview_lang, flight_info)
+    orig_subj, orig_text = generate_email_text_base(preview_lang, flight_info)
 
     curr_subj = st.session_state.custom_templates[preview_lang]["subject"] or orig_subj
-    curr_html = st.session_state.custom_templates[preview_lang]["html"] or orig_html
+    curr_text = st.session_state.custom_templates[preview_lang]["text"] or orig_text
 
     lbl_title = "ГАРЧИГ:" if preview_lang == "MN" else "SUBJECT:"
 
     if st.session_state.edit_mode:
         st.info("💡 Текст доторх `{PAX_NAME}`, `{PNR}`, `{TICKET_NO}` түлхүүр үгс нь зорчигч бүрийн мэдээллээр автоматаар солигдох болно.")
         new_subj = st.text_input(f"{lbl_title}", value=curr_subj)
-        new_html = st.text_area("HTML Template Эх текст:", value=curr_html, height=300)
+        new_text = st.text_area("Засах боломжтой эх текст:", value=curr_text, height=320)
         
         st.session_state.custom_templates[preview_lang]["subject"] = new_subj
-        st.session_state.custom_templates[preview_lang]["html"] = new_html
+        st.session_state.custom_templates[preview_lang]["text"] = new_text
     else:
         sample_rec = st.session_state.records[0] if st.session_state.records else None
         st.markdown(f"**{lbl_title}** {curr_subj}")
-        # Preview дээр л зөвхөн 1-р зорчигчийн мэдээллээр сольно
-        rendered_preview = render_custom_template(curr_html, sample_rec)
-        st.components.v1.html(rendered_preview, height=350, scrolling=True)
+        
+        # HTML код харуулахгүйгээр цэвэр хэлбэрээр preview хийх
+        rendered_plain = render_custom_template(curr_text, sample_rec)
+        rendered_html = text_to_html(rendered_plain)
+        st.components.v1.html(rendered_html, height=350, scrolling=True)
 
 st.divider()
 
@@ -532,18 +502,18 @@ def confirm_and_send_dialog():
     sample_rec = st.session_state.records[0] if st.session_state.records else None
     
     with tab_mn:
-        orig_subj, _, orig_html = generate_email_template_base("MN", flight_info)
+        orig_subj, orig_text = generate_email_text_base("MN", flight_info)
         s_subj = st.session_state.custom_templates["MN"]["subject"] or orig_subj
-        s_html = st.session_state.custom_templates["MN"]["html"] or orig_html
+        s_text = st.session_state.custom_templates["MN"]["text"] or orig_text
         st.markdown(f"**ГАРЧИГ:** {s_subj}")
-        st.components.v1.html(render_custom_template(s_html, sample_rec), height=250, scrolling=True)
+        st.components.v1.html(text_to_html(render_custom_template(s_text, sample_rec)), height=250, scrolling=True)
         
     with tab_en:
-        orig_subj_en, _, orig_html_en = generate_email_template_base("EN", flight_info)
+        orig_subj_en, orig_text_en = generate_email_text_base("EN", flight_info)
         s_subj_en = st.session_state.custom_templates["EN"]["subject"] or orig_subj_en
-        s_html_en = st.session_state.custom_templates["EN"]["html"] or orig_html_en
+        s_text_en = st.session_state.custom_templates["EN"]["text"] or orig_text_en
         st.markdown(f"**SUBJECT:** {s_subj_en}")
-        st.components.v1.html(render_custom_template(s_html_en, sample_rec), height=250, scrolling=True)
+        st.components.v1.html(text_to_html(render_custom_template(s_text_en, sample_rec)), height=250, scrolling=True)
         
     col_d1, col_d2 = st.columns([1, 1])
     if col_d1.button("✅ Зөв, одоо илгээх", type="primary", use_container_width=True):
@@ -582,15 +552,16 @@ with col_act1:
 
             for recipient in pax.get("EmailList", []):
                 try:
-                    orig_subj, orig_plain, orig_html = generate_email_template_base(lang, flight_info)
+                    orig_subj, orig_text = generate_email_text_base(lang, flight_info)
                     
                     cust_subj = st.session_state.custom_templates[lang]["subject"]
-                    cust_html = st.session_state.custom_templates[lang]["html"]
+                    cust_text = st.session_state.custom_templates[lang]["text"]
                     
                     final_subj = cust_subj if cust_subj else orig_subj
-                    raw_html = cust_html if cust_html else orig_html
-                    final_html = render_custom_template(raw_html, pax)
-                    final_plain = orig_plain
+                    raw_text = cust_text if cust_text else orig_text
+                    
+                    final_plain = render_custom_template(raw_text, pax)
+                    final_html = text_to_html(final_plain)
 
                     send_email_smtp(sender_email, app_password, recipient, final_subj, final_plain, final_html)
                     pax["SendStatus"] = "Sent Successfully"
