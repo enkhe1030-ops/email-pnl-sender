@@ -237,14 +237,15 @@ def parse_pnl(text):
 # TEMPLATE GENERATOR
 # ============================================================
 
-def generate_email_for_passenger(record, target_lang, flight_info):
-    pax_name = record.get('Passenger Name') if record else "{PAX_NAME}"
-    pnr_code = record.get('PNR') if record else "{PNR}"
-    tkt_no = record.get('TicketNo') if record else "{TICKET_NO}"
+def generate_email_template_base(target_lang, flight_info):
+    """ Анхны загвар текстийг хувьсагчуудтай ({PAX_NAME}, {PNR}, {TICKET_NO}) нь бэлтгэж өгнө """
+    pax_name = "{PAX_NAME}"
+    pnr_code = "{PNR}"
+    tkt_no = "{TICKET_NO}"
 
-    flt_no = flight_info['flight'] or (record.get('Flight') if record else "OM137")
-    flt_date = flight_info['date'] or (record.get('Date') if record else "08NOV30")
-    raw_route = flight_info['route'] or (record.get('Route') if record else "UBN-FRA")
+    flt_no = flight_info['flight'] or "OM137"
+    flt_date = flight_info['date'] or "08NOV30"
+    raw_route = flight_info['route'] or "UBN-FRA"
     dep_time = flight_info['dep_time']
     arr_time = flight_info['arr_time']
     reason = flight_info['reason']
@@ -288,7 +289,7 @@ def generate_email_for_passenger(record, target_lang, flight_info):
 • Чиглэл: {raw_route}"""
             if dep_time: html_body += f"<br>• Нисэх цаг: {dep_time}"
             if arr_time: html_body += f"<br>• Буух цаг: {arr_time}"
-            html_body += "<br><br>Таны тийзийн төлөв байдал болон шинэ нислэгийн мэдээллийг баталгаажуулахын тулд тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.<br><br>Дээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.<br><br>Хүндэтгэсэн,<br>МИАТ ТӨХК</div>"
+            html_body += "<br><br>Таны тийзийн төлөв байдал болон шинэ нислэгийн мэдээллийг баталгаажуулахын тулд тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.<br><br>Дээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүндэтгэн хүлцэл өчье.<br><br>Хүндэтгэсэн,<br>МИАТ ТӨХК</div>"
             
             plain_body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэгийн цагийн хуваарьт өөрчлөлт орсон болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nШИНЭ НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}\n\nХүндэтгэсэн,\nМИАТ ТӨХК"
 
@@ -334,6 +335,7 @@ We regret to inform you of a <b>schedule change</b> for your flight {flt_no} {fu
     return subject, plain_body, html_body
 
 def render_custom_template(template_html, record):
+    """ Template текстийг тухайн зорчигчийн бодит мэдээллээр сольно """
     pax_name = record.get('Passenger Name', '') if record else "{PAX_NAME}"
     pnr_code = record.get('PNR', '') if record else "{PNR}"
     tkt_no = record.get('TicketNo', '') if record else "{TICKET_NO}"
@@ -461,7 +463,6 @@ with tab1:
             use_container_width=True
         )
         
-        # DataFrame-ийн сонгогдсон төлвийг session_state руу шууд синк хийх
         for idx, row in edited_df.iterrows():
             st.session_state.records[idx]["Selected"] = row["Selected"]
 
@@ -493,13 +494,13 @@ with tab3:
     with col_p3:
         st.write("")
         if st.session_state.custom_templates[preview_lang]["html"]:
-            if st.button("🔄 Анхны хэвэнд нь оруулах"):
+            if st.button("🔄 Анхны хувилбар"):
                 st.session_state.custom_templates[preview_lang] = {"subject": "", "html": ""}
                 st.session_state.edit_mode = False
                 st.rerun()
 
-    sample_rec = st.session_state.records[0] if st.session_state.records else None
-    orig_subj, orig_plain, orig_html = generate_email_for_passenger(sample_rec, preview_lang, flight_info)
+    # Анхны загвар текстийг авах ({PAX_NAME}, {PNR}, {TICKET_NO} хувьсагчуудтайгаа)
+    orig_subj, orig_plain, orig_html = generate_email_template_base(preview_lang, flight_info)
 
     curr_subj = st.session_state.custom_templates[preview_lang]["subject"] or orig_subj
     curr_html = st.session_state.custom_templates[preview_lang]["html"] or orig_html
@@ -514,8 +515,10 @@ with tab3:
         st.session_state.custom_templates[preview_lang]["subject"] = new_subj
         st.session_state.custom_templates[preview_lang]["html"] = new_html
     else:
+        sample_rec = st.session_state.records[0] if st.session_state.records else None
         st.markdown(f"**{lbl_title}** {curr_subj}")
-        rendered_preview = render_custom_template(curr_html, sample_rec) if st.session_state.custom_templates[preview_lang]["html"] else curr_html
+        # Preview дээр л зөвхөн 1-р зорчигчийн мэдээллээр сольно
+        rendered_preview = render_custom_template(curr_html, sample_rec)
         st.components.v1.html(rendered_preview, height=350, scrolling=True)
 
 st.divider()
@@ -529,14 +532,14 @@ def confirm_and_send_dialog():
     sample_rec = st.session_state.records[0] if st.session_state.records else None
     
     with tab_mn:
-        orig_subj, _, orig_html = generate_email_for_passenger(sample_rec, "MN", flight_info)
+        orig_subj, _, orig_html = generate_email_template_base("MN", flight_info)
         s_subj = st.session_state.custom_templates["MN"]["subject"] or orig_subj
         s_html = st.session_state.custom_templates["MN"]["html"] or orig_html
         st.markdown(f"**ГАРЧИГ:** {s_subj}")
         st.components.v1.html(render_custom_template(s_html, sample_rec), height=250, scrolling=True)
         
     with tab_en:
-        orig_subj_en, _, orig_html_en = generate_email_for_passenger(sample_rec, "EN", flight_info)
+        orig_subj_en, _, orig_html_en = generate_email_template_base("EN", flight_info)
         s_subj_en = st.session_state.custom_templates["EN"]["subject"] or orig_subj_en
         s_html_en = st.session_state.custom_templates["EN"]["html"] or orig_html_en
         st.markdown(f"**SUBJECT:** {s_subj_en}")
@@ -579,13 +582,14 @@ with col_act1:
 
             for recipient in pax.get("EmailList", []):
                 try:
-                    orig_subj, orig_plain, orig_html = generate_email_for_passenger(pax, lang, flight_info)
+                    orig_subj, orig_plain, orig_html = generate_email_template_base(lang, flight_info)
                     
                     cust_subj = st.session_state.custom_templates[lang]["subject"]
                     cust_html = st.session_state.custom_templates[lang]["html"]
                     
                     final_subj = cust_subj if cust_subj else orig_subj
-                    final_html = render_custom_template(cust_html, pax) if cust_html else orig_html
+                    raw_html = cust_html if cust_html else orig_html
+                    final_html = render_custom_template(raw_html, pax)
                     final_plain = orig_plain
 
                     send_email_smtp(sender_email, app_password, recipient, final_subj, final_plain, final_html)
@@ -606,7 +610,6 @@ with col_act2:
     if all_data:
         df_export = pd.DataFrame(all_data)
         
-        # Selected, SeqNo, EmailList багануудыг экспортлохоос хасах
         cols_to_drop = ["Selected", "SeqNo", "EmailList"]
         df_export_cleaned = df_export.drop(columns=[c for c in cols_to_drop if c in df_export.columns])
         
