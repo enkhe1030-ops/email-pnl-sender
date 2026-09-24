@@ -1,7 +1,7 @@
 import re
 import smtplib
 from datetime import datetime
-from zoneinfo import ZoneInfo  # Улаанбаатарын цагийн бүс тохируулахад ашиглана
+from zoneinfo import ZoneInfo  
 from email.message import EmailMessage
 import pandas as pd
 import streamlit as st
