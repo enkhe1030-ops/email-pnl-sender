@@ -1,6 +1,7 @@
 import re
 import smtplib
 from datetime import datetime
+from zoneinfo import ZoneInfo  # Улаанбаатарын цагийн бүс тохируулахад ашиглана
 from email.message import EmailMessage
 import pandas as pd
 import streamlit as st
@@ -28,6 +29,10 @@ AIRPORT_NAMES = {
 # HELPER FUNCTIONS
 # ============================================================
 
+def get_ubn_now():
+    """ Улаанбаатарын одоогийн цагийг авах (UTC+8) """
+    return datetime.now(ZoneInfo("Asia/Ulaanbaatar")).strftime("%Y-%m-%d %H:%M:%S")
+
 def get_route_text(route_str, lang="MN"):
     if not route_str or "-" not in route_str:
         return route_str, route_str
@@ -46,7 +51,7 @@ def get_route_text(route_str, lang="MN"):
 
 def format_date_custom(raw_date_str):
     if not raw_date_str:
-        now = datetime.now()
+        now = datetime.now(ZoneInfo("Asia/Ulaanbaatar"))
         return now.strftime("%Y.%m.%d"), now.strftime("%Y-%m-%d"), now.strftime("%B %d, %Y")
 
     months = {
@@ -58,7 +63,7 @@ def format_date_custom(raw_date_str):
     if m:
         day = int(m.group(1))
         month_str = m.group(2)
-        year_str = m.group(3) if m.group(3) else str(datetime.now().year)
+        year_str = m.group(3) if m.group(3) else str(datetime.now(ZoneInfo("Asia/Ulaanbaatar")).year)
 
         if len(year_str) == 2:
             year_str = "20" + year_str
@@ -286,7 +291,7 @@ def generate_email_text_base(target_lang, flight_info):
     return subject, body
 
 def text_to_html(plain_text):
-    """ Энгийн текстийг гоё хэлбэртэй HTML руу хөрвүүлнэ """
+    """ Энгийн текстийг HTML хэлбэрт хөрвүүлнэ """
     formatted = plain_text.replace('\n', '<br>')
     formatted = re.sub(r'(\b[A-Z-0-9А-ЯӨҮөү\s]+:)', r'<b>\1</b>', formatted)
     return f'<div style="font-family: Calibri, sans-serif; font-size: 11pt; line-height: 1.5;">{formatted}</div>'
@@ -431,7 +436,6 @@ with tab1:
             key="passenger_editor"
         )
         
-        # Сонголтын төлвийг зөв синк хийх
         for idx, row in edited_df.iterrows():
             st.session_state.records[idx]["Selected"] = row["Selected"]
 
@@ -486,7 +490,6 @@ with tab3:
         sample_rec = st.session_state.records[0] if st.session_state.records else None
         st.markdown(f"**{lbl_title}** {curr_subj}")
         
-        # HTML код харуулахгүйгээр цэвэр хэлбэрээр preview хийх
         rendered_plain = render_custom_template(curr_text, sample_rec)
         rendered_html = text_to_html(rendered_plain)
         st.components.v1.html(rendered_html, height=350, scrolling=True)
@@ -565,7 +568,9 @@ with col_act1:
 
                     send_email_smtp(sender_email, app_password, recipient, final_subj, final_plain, final_html)
                     pax["SendStatus"] = "Sent Successfully"
-                    pax["SentTime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    # Улаанбаатарын цагаар хадгалах (UTC+8)
+                    pax["SentTime"] = get_ubn_now()
                     success_count += 1
                 except Exception as e:
                     pax["SendStatus"] = f"Failed: {str(e)}"
@@ -585,10 +590,13 @@ with col_act2:
         df_export_cleaned = df_export.drop(columns=[c for c in cols_to_drop if c in df_export.columns])
         
         csv_data = df_export_cleaned.to_csv(index=False).encode('utf-8-sig')
+        
+        # Файлын нэрэнд мөн Улаанбаатарын цагийг ашиглах
+        ubn_file_time = datetime.now(ZoneInfo("Asia/Ulaanbaatar")).strftime("%Y%m%d_%H%M%S")
         st.download_button(
             label="📥 EXCEL тайлан татах",
             data=csv_data,
-            file_name=f"PNL_Export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            file_name=f"PNL_Export_{ubn_file_time}.csv",
             mime="text/csv",
             use_container_width=True
         )
