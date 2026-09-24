@@ -1,7 +1,6 @@
 import re
 import smtplib
 from datetime import datetime
-from zoneinfo import ZoneInfo  # Улаанбаатарын цагийн бүс тохируулахад ашиглана
 from email.message import EmailMessage
 import pandas as pd
 import streamlit as st
@@ -11,202 +10,23 @@ import streamlit as st
 # ============================================================
 
 AIRPORT_NAMES = {
-    # ==========================================
-    # 1. МОНГОЛ УЛС (Орон нутаг & Олон улс)
-    # ==========================================
     "UBN": {"MN": "Улаанбаатар", "EN": "Ulaanbaatar"},
-    "ULN": {"MN": "Улаанбаатар (Буянт-Ухаа)", "EN": "Ulaanbaatar (Old)"},
-    "HVD": {"MN": "Ховд", "EN": "Khovd"},
-    "ULG": {"MN": "Өлгий", "EN": "Olgii"},
-    "UGA": {"MN": "Улаангом", "EN": "Ulaangom"},
-    "UNR": {"MN": "Өндөрхаан (Чингис город)", "EN": "Undurkhaan"},
-    "DLZ": {"MN": "Даланзадгад", "EN": "Dalanzadgad"},
-    "LTI": {"MN": "Алтай", "EN": "Altai"},
-    "MWR": {"MN": "Мөрөн", "EN": "Moron"},
-    "UZZ": {"MN": "Улиастай (Донной)", "EN": "Uliastai"},
-    "COQ": {"MN": "Чойбалсан", "EN": "Choibalsan"},
-    "BYN": {"MN": "Баянхонгор", "EN": "Bayankhongor"},
-    "EAV": {"MN": "Алтат (Оюут толгой)", "EN": "Khanbumbat / Oyu Tolgoi"},
-    "THN": {"MN": "Таван толгой", "EN": "Tavan Tolgoi"},
-    "TST": {"MN": "Цагаан суварга", "EN": "Tsagaan Suvarga"},
-    "PST": {"MN": "Баян-Өндөр (Орхон)", "EN": "Erdenet"},
-    "TXN": {"MN": "Ташаанта", "EN": "Tashaanta"},
-
-    # ==========================================
-    # 2. ЗҮҮН АЗИ (East Asia)
-    # ==========================================
-    # БНСУ (South Korea)
-    "ICN": {"MN": "Сөүл (Инчон)", "EN": "Seoul (Incheon)"},
-    "GMP": {"MN": "Сөүл (Кимпо)", "EN": "Seoul (Gimpo)"},
-    "PUS": {"MN": "Пусан", "EN": "Busan"},
-    "CJU": {"MN": "Чежу", "EN": "Jeju"},
-    "TAE": {"MN": "Тэгү", "EN": "Daegu"},
-    "CJJ": {"MN": "Чонжу", "EN": "Cheongju"},
-
-    # Япон (Japan)
-    "NRT": {"MN": "Токио (Нарита)", "EN": "Tokyo (Narita)"},
-    "HND": {"MN": "Токио (Ханеда)", "EN": "Tokyo (Haneda)"},
-    "KIX": {"MN": "Осака (Кансай)", "EN": "Osaka (Kansai)"},
-    "ITM": {"MN": "Осака (Итами)", "EN": "Osaka (Itami)"},
-    "NGO": {"MN": "Нагоя", "EN": "Nagoya"},
-    "CTS": {"MN": "Саппоро", "EN": "Sapporo"},
-    "FUK": {"MN": "Фукуока", "EN": "Fukuoka"},
-    "OKA": {"MN": "Окинава", "EN": "Okinawa"},
-
-    # БНХАУ (China)
-    "PEK": {"MN": "Бээжин (Капитал)", "EN": "Beijing (Capital)"},
-    "PKX": {"MN": "Бээжин (Дашин)", "EN": "Beijing (Daxing)"},
-    "PVG": {"MN": "Шанхай (Пудон)", "EN": "Shanghai (Pudong)"},
-    "SHA": {"MN": "Шанхай (Хунчяо)", "EN": "Shanghai (Hongqiao)"},
-    "CAN": {"MN": "Гуанжоу", "EN": "Guangzhou"},
-    "SZX": {"MN": "Шэньчжэнь", "EN": "Shenzhen"},
-    "CTU": {"MN": "Чэнду", "EN": "Chengdu"},
-    "CKG": {"MN": "Чунцин", "EN": "Chongqing"},
-    "KMG": {"MN": "Куньмин", "EN": "Kunming"},
-    "XIY": {"MN": "Сиань", "EN": "Xi'an"},
-    "HET": {"MN": "Хөх хот", "EN": "Hohhot"},
-    "DSN": {"MN": "Ордос", "EN": "Ordos"},
-    "EER": {"MN": "Эрээн", "EN": "Erenhot"},
-    "SYX": {"MN": "Санья (Хайнань)", "EN": "Sanya (Hainan)"},
-    "HAK": {"MN": "Хайкоу (Хайнань)", "EN": "Haikou (Hainan)"},
-    "HKG": {"MN": "Хонконг", "EN": "Hong Kong"},
-    "MFM": {"MN": "Макао", "EN": "Macau"},
-    "TPE": {"MN": "Тайбэй (Таоюань)", "EN": "Taipei (Taoyuan)"},
-
-    # ==========================================
-    # 3. ЗҮҮН ӨМНӨД АЗИ (Southeast Asia)
-    # ==========================================
-    "BKK": {"MN": "Бангкок (Суварнабхуми)", "EN": "Bangkok (Suvarnabhumi)"},
-    "DMK": {"MN": "Бангкок (Дон Мыанг)", "EN": "Bangkok (Don Mueang)"},
-    "HKT": {"MN": "Пүкэт", "EN": "Phuket"},
-    "SIN": {"MN": "Сингапур (Чанги)", "EN": "Singapore (Changi)"},
-    "KUL": {"MN": "Куала Лумпур", "EN": "Kuala Lumpur"},
-    "SGN": {"MN": "Хо Ши Мин", "EN": "Ho Chi Minh City"},
-    "HAN": {"MN": "Ханой", "EN": "Hanoi"},
-    "DAD": {"MN": "Да Нанг", "EN": "Da Nang"},
-    "PQC": {"MN": "Фү Куок", "EN": "Phu Quoc"},
-    "MNL": {"MN": "Манила", "EN": "Manila"},
-    "CEB": {"MN": "Себу", "EN": "Cebu"},
-    "CGK": {"MN": "Жакарта", "EN": "Jakarta"},
-    "DPS": {"MN": "Бали (Денпасар)", "EN": "Bali (Denpasar)"},
-
-    # ==========================================
-    # 4. ЭНЭТХЭГ & ТӨВ АЗИ (South & Central Asia)
-    # ==========================================
-    "DEL": {"MN": "Нью Дели", "EN": "New Delhi"},
-    "BOM": {"MN": "Мумбай", "EN": "Mumbai"},
-    "ALA": {"MN": "Алматы", "EN": "Almaty"},
-    "NQZ": {"MN": "Астана", "EN": "Astana"},
-    "TAS": {"MN": "Ташкент", "EN": "Tashkent"},
-    "FRU": {"MN": "Бишкек", "EN": "Bishkek"},
-
-    # ==========================================
-    # 5. ОЙРХИ ДОРНОД (Middle East)
-    # ==========================================
-    "DXB": {"MN": "Дубай", "EN": "Dubai"},
-    "DWC": {"MN": "Дубай (Аль-Мактум)", "EN": "Dubai (Al Maktoum)"},
-    "AUH": {"MN": "Абу Даби", "EN": "Abu Dhabi"},
-    "DOH": {"MN": "Доха", "EN": "Doha"},
-    "IST": {"MN": "Истанбул", "EN": "Istanbul"},
-    "SAW": {"MN": "Истанбул (Сабиха Гөкчен)", "EN": "Istanbul (Sabiha Gokcen)"},
-    "AYT": {"MN": "Анталья", "EN": "Antalya"},
-    "MCT": {"MN": "Маскат", "EN": "Muscat"},
-    "RUH": {"MN": "Эр-Рияд", "EN": "Riyadh"},
-
-    # ==========================================
-    # 6. ОРОСЫН ХОЛБООНЫ УЛС (Russia)
-    # ==========================================
-    "SVO": {"MN": "Москва (Шереметьево)", "EN": "Moscow (Sheremetyevo)"},
-    "DME": {"MN": "Москва (Домодедово)", "EN": "Moscow (Domodedovo)"},
-    "VKO": {"MN": "Москва (Внуково)", "EN": "Moscow (Vnukovo)"},
-    "LED": {"MN": "Санкт-Петербург", "EN": "St. Petersburg"},
-    "IKT": {"MN": "Иркутск", "EN": "Irkutsk"},
-    "UUD": {"MN": "Улаан-Үд", "EN": "Ulan-Ude"},
-    "VVO": {"MN": "Владивосток", "EN": "Vladivostok"},
-    "OVB": {"MN": "Новосибирск", "EN": "Novosibirsk"},
-    "KJA": {"MN": "Красноярск", "EN": "Krasnoyarsk"},
-    "KGD": {"MN": "Калининград", "EN": "Kaliningrad"},
-
-    # ==========================================
-    # 7. ЕВРОП & ИРЛАНД (Europe & Ireland)
-    # ==========================================
-    # Их Британи & Ирланд (UK & Ireland)
-    "LHR": {"MN": "Лондон (Хитроу)", "EN": "London (Heathrow)"},
-    "LGW": {"MN": "Лондон (Гатвик)", "EN": "London (Gatwick)"},
-    "STN": {"MN": "Лондон (Станстед)", "EN": "London (Stansted)"},
-    "LTN": {"MN": "Лондон (Лутон)", "EN": "London (Luton)"},
-    "MAN": {"MN": "Манчестер", "EN": "Manchester"},
-    "BHX": {"MN": "Бирмингем", "EN": "Birmingham"},
-    "EDI": {"MN": "Эдинбург", "EN": "Edinburgh"},
-    "DUB": {"MN": "Дублин", "EN": "Dublin"},
-    "ORK": {"MN": "Корг", "EN": "Cork"},
-    "SNN": {"MN": "Шэннон", "EN": "Shannon"},
-
-    # Скандинавын орнууд (Nordic)
-    "GOT": {"MN": "Гётеборг", "EN": "Gothenburg"},
-    "ARN": {"MN": "Стокгольм", "EN": "Stockholm"},
-    "CPH": {"MN": "Копенгаген", "EN": "Copenhagen"},
-    "OSL": {"MN": "Осло", "EN": "Oslo"},
-    "HEL": {"MN": "Хельсинки", "EN": "Helsinki"},
-
-    # Бусад Европ
+    "NRT": {"MN": "Токио", "EN": "Tokyo"},
+    "HND": {"MN": "Токио", "EN": "Tokyo"},
     "FRA": {"MN": "Франкфурт", "EN": "Frankfurt"},
-    "MUC": {"MN": "Мюнхен", "EN": "Munich"},
-    "BER": {"MN": "Берлин", "EN": "Berlin"},
-    "CDG": {"MN": "Парис (Шарль де Голль)", "EN": "Paris (Charles de Gaulle)"},
-    "ORY": {"MN": "Парис (Орли)", "EN": "Paris (Orly)"},
-    "AMS": {"MN": "Амстердам", "EN": "Amsterdam"},
-    "ZRH": {"MN": "Цюрих", "EN": "Zurich"},
-    "VIE": {"MN": "Вена", "EN": "Vienna"},
-    "PRG": {"MN": "Прага", "EN": "Prague"},
-    "FCO": {"MN": "Ром", "EN": "Rome"},
-    "MXP": {"MN": "Милан (Мальпенса)", "EN": "Milan (Malpensa)"},
-    "MAD": {"MN": "Мадрид", "EN": "Madrid"},
-    "BCN": {"MN": "Барселона", "EN": "Barcelona"},
-    "ATH": {"MN": "Афин", "EN": "Athens"},
-    "WAW": {"MN": "Варшав", "EN": "Warsaw"},
-    "BUD": {"MN": "Будапешт", "EN": "Budapest"},
-
-    # ==========================================
-    # 8. ХОЁР БҮЛДИЙН АМЕРИК (North & South America)
-    # ==========================================
-    "JFK": {"MN": "Нью-Йорк (JFK)", "EN": "New York (JFK)"},
-    "EWR": {"MN": "Нью-Йорк (Ньюарк)", "EN": "New York (Newark)"},
-    "LAX": {"MN": "Лос-Анжелес", "EN": "Los Angeles"},
-    "SFO": {"MN": "Сан Франциско", "EN": "San Francisco"},
-    "ORD": {"MN": "Чикаго (О'Хара)", "EN": "Chicago (O'Hare)"},
-    "SEA": {"MN": "Сиэтл", "EN": "Seattle"},
-    "MIA": {"MN": "Майами", "EN": "Miami"},
-    "IAD": {"MN": "Вашингтон (Даллес)", "EN": "Washington (Dulles)"},
-    "YVR": {"MN": "Ванкувер", "EN": "Vancouver"},
-    "YYZ": {"MN": "Торонто", "EN": "Toronto"},
-    "GRU": {"MN": "Сан Пауло", "EN": "Sao Paulo"},
-    "EZE": {"MN": "Буэнос-Айрес", "EN": "Buenos Aires"},
-
-    # ==========================================
-    # 9. АВСТРАЛИ & ДАЛАЙН ОРОН (Australia & Pacific)
-    # ==========================================
-    "SYD": {"MN": "Сидней", "EN": "Sydney"},
-    "MEL": {"MN": "Мельбурн", "EN": "Melbourne"},
-    "BNE": {"MN": "Брисбен", "EN": "Brisbane"},
-    "PER": {"MN": "Перт", "EN": "Perth"},
-    "AKL": {"MN": "Окленд", "EN": "Auckland"},
-
-    # ==========================================
-    # 10. АФРИК (Africa)
-    # ==========================================
-    "CAI": {"MN": "Каир", "EN": "Cairo"},
-    "JNB": {"MN": "Йоханнесбург", "EN": "Johannesburg"},
-    "CPT": {"MN": "Кейптаун", "EN": "Cape Town"},
+    "ICN": {"MN": "Сөүл", "EN": "Seoul"},
+    "PEK": {"MN": "Бээжин", "EN": "Beijing"},
+    "PKX": {"MN": "Бээжин", "EN": "Beijing"},
+    "BKK": {"MN": "Бангкок", "EN": "Bangkok"},
+    "PUS": {"MN": "Пусан", "EN": "Busan"},
+    "IST": {"MN": "Истанбул", "EN": "Istanbul"},
+    "SVO": {"MN": "Москва", "EN": "Moscow"},
+    "HKG": {"MN": "Хонконг", "EN": "Hong Kong"},
 }
 
 # ============================================================
 # HELPER FUNCTIONS
 # ============================================================
-
-def get_ubn_now():
-    """ Улаанбаатарын одоогийн цагийг авах (UTC+8) """
-    return datetime.now(ZoneInfo("Asia/Ulaanbaatar")).strftime("%Y-%m-%d %H:%M:%S")
 
 def get_route_text(route_str, lang="MN"):
     if not route_str or "-" not in route_str:
@@ -226,7 +46,7 @@ def get_route_text(route_str, lang="MN"):
 
 def format_date_custom(raw_date_str):
     if not raw_date_str:
-        now = datetime.now(ZoneInfo("Asia/Ulaanbaatar"))
+        now = datetime.now()
         return now.strftime("%Y.%m.%d"), now.strftime("%Y-%m-%d"), now.strftime("%B %d, %Y")
 
     months = {
@@ -238,7 +58,7 @@ def format_date_custom(raw_date_str):
     if m:
         day = int(m.group(1))
         month_str = m.group(2)
-        year_str = m.group(3) if m.group(3) else str(datetime.now(ZoneInfo("Asia/Ulaanbaatar")).year)
+        year_str = m.group(3) if m.group(3) else str(datetime.now().year)
 
         if len(year_str) == 2:
             year_str = "20" + year_str
@@ -385,7 +205,7 @@ def parse_pnl(text):
 
         record = {
             "Selected": True,
-            "SeqNo": str(valid_idx) if not missing_reasons else "",
+            "SeqNo": "",
             "PNLNo": pax["PNLNo"],
             "Passenger Name": pax["Passenger Name"],
             "PNR": pax["PNR"],
@@ -408,6 +228,7 @@ def parse_pnl(text):
             missing_data_records.append(record)
             missing_idx += 1
         else:
+            record["SeqNo"] = str(valid_idx)
             formatted_records.append(record)
             valid_idx += 1
 
@@ -417,15 +238,14 @@ def parse_pnl(text):
 # TEMPLATE GENERATOR
 # ============================================================
 
-def generate_email_text_base(target_lang, flight_info):
-    """ Энгийн текст (Plain text) хэлбэрийн загвар """
-    pax_name = "{PAX_NAME}"
-    pnr_code = "{PNR}"
-    tkt_no = "{TICKET_NO}"
+def generate_email_for_passenger(record, target_lang, flight_info):
+    pax_name = record.get('Passenger Name') if record else "ЗОРЧИГЧ"
+    pnr_code = record.get('PNR') if record else "-"
+    tkt_no = record.get('TicketNo') if record else "-"
 
-    flt_no = flight_info['flight'] or "OM137"
-    flt_date = flight_info['date'] or "08NOV30"
-    raw_route = flight_info['route'] or "UBN-FRA"
+    flt_no = flight_info['flight'] or (record.get('Flight') if record else "OM137")
+    flt_date = flight_info['date'] or (record.get('Date') if record else "08NOV30")
+    raw_route = flight_info['route'] or (record.get('Route') if record else "UBN-FRA")
     dep_time = flight_info['dep_time']
     arr_time = flight_info['arr_time']
     reason = flight_info['reason']
@@ -437,49 +257,82 @@ def generate_email_text_base(target_lang, flight_info):
     if target_lang == "MN":
         if status_type == "CANCEL":
             subject = f"{mn_dot_date} –ний {city_title} {flt_no} нислэг цуцлагдсан тухай мэдэгдэл"
-            body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэг цуцлагдсан болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nЦУЦЛАГДСАН НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}"
-            if dep_time: body += f"\n• Нисэх цаг: {dep_time}"
-            if arr_time: body += f"\n• Буух цаг: {arr_time}"
-            if reason: body += f"\n• Шалтгаан: {reason}"
-            body += "\n\nТийз буцаалт болон өөр өдрийн нислэгээр тийзээ өөрчилж баталгаажуулах талаар тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.\n\nДээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.\n\nХүндэтгэсэн,\nМИАТ ТӨХК"
+            html_body = f"""<div style="font-family: Calibri, sans-serif; font-size: 11pt;">
+Хүндэт {pax_name},<br><br>
+Таны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэг <b>цуцлагдсан</b> болохыг үүгээр мэдэгдэж байна.<br><br>
+<b>ЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:</b><br>
+• Зорчигчийн нэр: {pax_name}<br>
+• Захиалгын дугаар (PNR): {pnr_code}<br>
+• Тийзийн дугаар: {tkt_no}<br><br>
+<b>ЦУЦЛАГДСАН НИСЛЭГИЙН МЭДЭЭЛЭЛ:</b><br>
+• Нислэг: {flt_no}<br>
+• Огноо: {flt_date}<br>
+• Чиглэл: {raw_route}"""
+            if dep_time: html_body += f"<br>• Нисэх цаг: {dep_time}"
+            if arr_time: html_body += f"<br>• Буух цаг: {arr_time}"
+            if reason: html_body += f"<br>• Шалтгаан: {reason}"
+            html_body += "<br><br>Тийз буцаалт болон өөр өдрийн нислэгээр тийзээ өөрчилж баталгаажуулах талаар тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.<br><br>Дээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.<br><br>Хүндэтгэсэн,<br>МИАТ ТӨХК</div>"
+            
+            plain_body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэг цуцлагдсан болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nЦУЦЛАГДСАН НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}\n\nХүндэтгэсэн,\nМИАТ ТӨХК"
         else:
             subject = f"{mn_dot_date} –ний {city_title} {flt_no} нислэгийн хуваарийн өөрчлөлтийн тухай мэдэгдэл"
-            body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэгийн цагийн хуваарьт өөрчлөлт орсон болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nШИНЭ НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}"
-            if dep_time: body += f"\n• Нисэх цаг: {dep_time}"
-            if arr_time: body += f"\n• Буух цаг: {arr_time}"
-            body += "\n\nТаны тийзийн төлөв байдал болон шинэ нислэгийн мэдээллийг баталгаажуулахын тулд тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.\n\nДээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.\n\nХүндэтгэсэн,\nМИАТ ТӨХК"
+            html_body = f"""<div style="font-family: Calibri, sans-serif; font-size: 11pt;">
+Хүндэт {pax_name},<br><br>
+Таны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэгийн <b>цагийн хуваарьт өөрчлөлт</b> орсон болохыг үүгээр мэдэгдэж байна.<br><br>
+<b>ЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:</b><br>
+• Зорчигчийн нэр: {pax_name}<br>
+• Захиалгын дугаар (PNR): {pnr_code}<br>
+• Тийзийн дугаар: {tkt_no}<br><br>
+<b>ШИНЭ НИСЛЭГИЙН МЭДЭЭЛЭЛ:</b><br>
+• Нислэг: {flt_no}<br>
+• Огноо: {flt_date}<br>
+• Чиглэл: {raw_route}"""
+            if dep_time: html_body += f"<br>• Нисэх цаг: {dep_time}"
+            if arr_time: html_body += f"<br>• Буух цаг: {arr_time}"
+            html_body += "<br><br>Таны тийзийн төлөв байдал болон шинэ нислэгийн мэдээллийг баталгаажуулахын тулд тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.<br><br>Дээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.<br><br>Хүндэтгэсэн,<br>МИАТ ТӨХК</div>"
+            
+            plain_body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэгийн цагийн хуваарьт өөрчлөлт орсон болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nШИНЭ НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}\n\nХүндэтгэсэн,\nМИАТ ТӨХК"
+
     else: # EN
         if status_type == "CANCEL":
             subject = f"Flight Cancellation Notification - {flt_no} ({city_title}) - {en_date}"
-            body = f"Dear {pax_name},\n\nWe regret to inform you that your flight {flt_no} {full_route_display}, scheduled for {en_date}, has been cancelled.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nCANCELLED FLIGHT DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}\n- Route: {raw_route}"
-            if dep_time: body += f"\n- Departure Time: {dep_time}"
-            if arr_time: body += f"\n- Arrival Time: {arr_time}"
-            if reason: body += f"\n- Reason: {reason}"
-            body += "\n\nFor ticket refund or to change and confirm your ticket for a flight on another date, please contact your travel agent or ticket issuing office as soon as possible.\n\nBest regards,\nMIAT Mongolian Airlines"
+            html_body = f"""<div style="font-family: Calibri, sans-serif; font-size: 11pt;">
+Dear {pax_name},<br><br>
+We regret to inform you that your flight {flt_no} {full_route_display}, scheduled for {en_date}, has been <b>cancelled</b>.<br><br>
+<b>PASSENGER DETAILS:</b><br>
+- Passenger Name: {pax_name}<br>
+- Booking Reference (PNR): {pnr_code}<br>
+- Ticket Number: {tkt_no}<br><br>
+<b>CANCELLED FLIGHT DETAILS:</b><br>
+- Flight: {flt_no}<br>
+- Date: {flt_date}<br>
+- Route: {raw_route}"""
+            if dep_time: html_body += f"<br>- Departure Time: {dep_time}"
+            if arr_time: html_body += f"<br>- Arrival Time: {arr_time}"
+            if reason: html_body += f"<br>- Reason: {reason}"
+            html_body += "<br><br>For ticket refund or to change and confirm your ticket for a flight on another date, please contact your travel agent or ticket issuing office as soon as possible.<br><br>Best regards,<br>MIAT Mongolian Airlines</div>"
+            
+            plain_body = f"Dear {pax_name},\n\nWe regret to inform you that your flight {flt_no} {full_route_display}, scheduled for {en_date}, has been cancelled.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nBest regards,\nMIAT Mongolian Airlines"
         else:
             subject = f"Flight Schedule Change Notification - {flt_no} ({city_title}) – {en_date}"
-            body = f"Dear {pax_name},\n\nWe regret to inform you of a schedule change for your flight {flt_no} {full_route_display} on {en_date}.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nNEW FLIGHT SCHEDULE DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}\n- Route: {raw_route}"
-            if dep_time: body += f"\n- Departure Time: {dep_time}"
-            if arr_time: body += f"\n- Arrival Time: {arr_time}"
-            body += "\n\nPlease contact your travel agent or issuing office as soon as possible to confirm your flight details.\n\nBest regards,\nMIAT Mongolian Airlines"
+            html_body = f"""<div style="font-family: Calibri, sans-serif; font-size: 11pt;">
+Dear {pax_name},<br><br>
+We regret to inform you of a <b>schedule change</b> for your flight {flt_no} {full_route_display} on {en_date}.<br><br>
+<b>PASSENGER DETAILS:</b><br>
+- Passenger Name: {pax_name}<br>
+- Booking Reference (PNR): {pnr_code}<br>
+- Ticket Number: {tkt_no}<br><br>
+<b>NEW FLIGHT SCHEDULE DETAILS:</b><br>
+- Flight: {flt_no}<br>
+- Date: {flt_date}<br>
+- Route: {raw_route}"""
+            if dep_time: html_body += f"<br>- Departure Time: {dep_time}"
+            if arr_time: html_body += f"<br>- Arrival Time: {arr_time}"
+            html_body += "<br><br>Please contact your travel agent or issuing office as soon as possible to confirm your flight details.<br><br>Best regards,<br>MIAT Mongolian Airlines</div>"
+            
+            plain_body = f"Dear {pax_name},\n\nWe regret to inform you of a schedule change for your flight {flt_no} {full_route_display} on {en_date}.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nBest regards,\nMIAT Mongolian Airlines"
 
-    return subject, body
-
-def text_to_html(plain_text):
-    """ Энгийн текстийг HTML хэлбэрт хөрвүүлнэ """
-    formatted = plain_text.replace('\n', '<br>')
-    formatted = re.sub(r'(\b[A-Z-0-9А-ЯӨҮөү\s]+:)', r'<b>\1</b>', formatted)
-    return f'<div style="font-family: Calibri, sans-serif; font-size: 11pt; line-height: 1.5;">{formatted}</div>'
-
-def render_custom_template(template_text, record):
-    pax_name = record.get('Passenger Name', '') if record else "{PAX_NAME}"
-    pnr_code = record.get('PNR', '') if record else "{PNR}"
-    tkt_no = record.get('TicketNo', '') if record else "{TICKET_NO}"
-
-    rendered = template_text.replace("{PAX_NAME}", pax_name)
-    rendered = rendered.replace("{PNR}", pnr_code)
-    rendered = rendered.replace("{TICKET_NO}", tkt_no)
-    return rendered
+    return subject, plain_body, html_body
 
 # ============================================================
 # SMTP SENDER
@@ -509,12 +362,8 @@ if "records" not in st.session_state:
     st.session_state.records = []
 if "missing_records" not in st.session_state:
     st.session_state.missing_records = []
-if "pnl_text" not in st.session_state:
-    st.session_state.pnl_text = ""
-if "custom_templates" not in st.session_state:
-    st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
-if "edit_mode" not in st.session_state:
-    st.session_state.edit_mode = False
+if "pnl_input" not in st.session_state:
+    st.session_state.pnl_input = ""
 
 # --- SIDEBAR: AUTHENTICATION ---
 with st.sidebar:
@@ -528,13 +377,12 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     st.subheader("1. Amadeus Passenger Name List (PNL)")
-    pnl_input = st.text_area("PNL Эх текст хуулах:", value=st.session_state.pnl_text, height=250, key="pnl_textarea")
-    st.session_state.pnl_text = pnl_input
-
+    pnl_input = st.text_area("PNL Эх текст хуулах:", key="pnl_input", height=250)
+    
     col_btn1, col_btn2 = st.columns([1, 1])
     if col_btn1.button("Extract PNL", type="primary"):
-        if pnl_input.strip():
-            st.session_state.records, st.session_state.missing_records = parse_pnl(pnl_input)
+        if st.session_state.pnl_input.strip():
+            st.session_state.records, st.session_state.missing_records = parse_pnl(st.session_state.pnl_input)
             st.success("PNL амжилттай уншигдлаа!")
         else:
             st.warning("PNL текстээ оруулна уу.")
@@ -542,9 +390,7 @@ with col1:
     if col_btn2.button("Clear All"):
         st.session_state.records = []
         st.session_state.missing_records = []
-        st.session_state.pnl_text = ""
-        st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
-        st.session_state.edit_mode = False
+        st.session_state.pnl_input = ""  # Текстийн талбарыг арилгана
         st.rerun()
 
 with col2:
@@ -586,17 +432,6 @@ tab1, tab2, tab3 = st.tabs(["📋 Идэвхтэй Зорчигчид", "⚠️ 
 
 with tab1:
     if st.session_state.records:
-        col_s1, col_s2, col_s3 = st.columns([1, 1, 3])
-        if col_s1.button("☑️ Бүгдийг сонгох"):
-            for r in st.session_state.records:
-                r["Selected"] = True
-            st.rerun()
-
-        if col_s2.button("🔲 Бүгдийг болиулах"):
-            for r in st.session_state.records:
-                r["Selected"] = False
-            st.rerun()
-
         df_valid = pd.DataFrame(st.session_state.records)
         cols_to_show = ["Selected", "SeqNo", "PNLNo", "Passenger Name", "PNR", "StatusCode", "BookingDate", "TicketNo", "Email", "Language", "SendStatus"]
         
@@ -607,13 +442,14 @@ with tab1:
             },
             disabled=["SeqNo", "PNLNo", "Passenger Name", "PNR", "StatusCode", "BookingDate", "TicketNo", "Email", "Language", "SendStatus"],
             hide_index=True,
-            use_container_width=True,
-            key="passenger_editor"
+            use_container_width=True
         )
         
+        # DataFrame-ийн сонгогдсон төлвийг session_state руу буцааж синк хийх
         for idx, row in edited_df.iterrows():
             st.session_state.records[idx]["Selected"] = row["Selected"]
 
+        # STATS
         mn_cnt = sum(1 for r in st.session_state.records if r["Language"] == "MN" and r["Selected"])
         en_cnt = sum(1 for r in st.session_state.records if r["Language"] == "EN" and r["Selected"])
         na_cnt = sum(1 for r in st.session_state.records if r["Language"] == "N/A" and r["Selected"])
@@ -631,75 +467,14 @@ with tab2:
         st.info("Дутуу мэдээлэлтэй зорчигч байхгүй байна.")
 
 with tab3:
-    col_p1, col_p2, col_p3 = st.columns([2, 1, 1])
-    with col_p1:
-        preview_lang = st.radio("Preview Хэл:", ["MN", "EN"], horizontal=True)
-    with col_p2:
-        st.write("")
-        if st.button("✏️ Засах" if not st.session_state.edit_mode else "👁️ Харж шалгах"):
-            st.session_state.edit_mode = not st.session_state.edit_mode
-            st.rerun()
-    with col_p3:
-        st.write("")
-        if st.session_state.custom_templates[preview_lang]["text"]:
-            if st.button("🔄 Анхны хувилбар"):
-                st.session_state.custom_templates[preview_lang] = {"subject": "", "text": ""}
-                st.session_state.edit_mode = False
-                st.rerun()
-
-    orig_subj, orig_text = generate_email_text_base(preview_lang, flight_info)
-
-    curr_subj = st.session_state.custom_templates[preview_lang]["subject"] or orig_subj
-    curr_text = st.session_state.custom_templates[preview_lang]["text"] or orig_text
-
-    lbl_title = "ГАРЧИГ:" if preview_lang == "MN" else "SUBJECT:"
-
-    if st.session_state.edit_mode:
-        st.info("💡 Текст доторх `{PAX_NAME}`, `{PNR}`, `{TICKET_NO}` түлхүүр үгс нь зорчигч бүрийн мэдээллээр автоматаар солигдох болно.")
-        new_subj = st.text_input(f"{lbl_title}", value=curr_subj)
-        new_text = st.text_area("Засах боломжтой эх текст:", value=curr_text, height=320)
-        
-        st.session_state.custom_templates[preview_lang]["subject"] = new_subj
-        st.session_state.custom_templates[preview_lang]["text"] = new_text
-    else:
-        sample_rec = st.session_state.records[0] if st.session_state.records else None
-        st.markdown(f"**{lbl_title}** {curr_subj}")
-        
-        rendered_plain = render_custom_template(curr_text, sample_rec)
-        rendered_html = text_to_html(rendered_plain)
-        st.components.v1.html(rendered_html, height=350, scrolling=True)
+    preview_lang = st.radio("Preview Хэл:", ["MN", "EN"], horizontal=True)
+    sample_rec = st.session_state.records[0] if st.session_state.records else None
+    subj, _, html_content = generate_email_for_passenger(sample_rec, preview_lang, flight_info)
+    
+    st.markdown(f"**ГАРЧИГ / SUBJECT:** {subj}")
+    st.components.v1.html(html_content, height=350, scrolling=True)
 
 st.divider()
-
-# --- DIALOG / MODAL FOR CONFIRMATION ---
-@st.dialog("Имэйл текстийг шалгах ба Баталгаажуулах", width="large")
-def confirm_and_send_dialog():
-    st.warning("⚠️ Дараах имэйлийн эх текст зорчигчид руу илгээгдэх гэж байна. Шалгаад 'Илгээх' эсвэл 'Засах' товчийг сонгоно уу.")
-    
-    tab_mn, tab_en = st.tabs(["🇲🇳 Монгол (MN)", "🇬🇧 Англи (EN)"])
-    sample_rec = st.session_state.records[0] if st.session_state.records else None
-    
-    with tab_mn:
-        orig_subj, orig_text = generate_email_text_base("MN", flight_info)
-        s_subj = st.session_state.custom_templates["MN"]["subject"] or orig_subj
-        s_text = st.session_state.custom_templates["MN"]["text"] or orig_text
-        st.markdown(f"**ГАРЧИГ:** {s_subj}")
-        st.components.v1.html(text_to_html(render_custom_template(s_text, sample_rec)), height=250, scrolling=True)
-        
-    with tab_en:
-        orig_subj_en, orig_text_en = generate_email_text_base("EN", flight_info)
-        s_subj_en = st.session_state.custom_templates["EN"]["subject"] or orig_subj_en
-        s_text_en = st.session_state.custom_templates["EN"]["text"] or orig_text_en
-        st.markdown(f"**SUBJECT:** {s_subj_en}")
-        st.components.v1.html(text_to_html(render_custom_template(s_text_en, sample_rec)), height=250, scrolling=True)
-        
-    col_d1, col_d2 = st.columns([1, 1])
-    if col_d1.button("✅ Зөв, одоо илгээх", type="primary", use_container_width=True):
-        st.session_state.start_send_process = True
-        st.rerun()
-        
-    if col_d2.button("✏️ Засах шаардлагатай", use_container_width=True):
-        st.rerun()
 
 # --- ACTIONS: SEND & EXPORT ---
 col_act1, col_act2 = st.columns([2, 1])
@@ -711,67 +486,46 @@ with col_act1:
         elif not st.session_state.records:
             st.warning("Илгээх зорчигч байхгүй байна.")
         else:
-            confirm_and_send_dialog()
-
-    if st.session_state.get("start_send_process", False):
-        st.session_state.start_send_process = False
-        selected_pax = [r for r in st.session_state.records if r.get("Selected", True)]
-        success_count, fail_count = 0, 0
-        
-        progress_bar = st.progress(0)
-        
-        for i, pax in enumerate(selected_pax):
-            lang = pax["Language"]
-            if lang == "N/A":
-                if na_action == "SKIP":
-                    pax["SendStatus"] = "Skipped (N/A)"
-                    continue
-                lang = na_action
-
-            for recipient in pax.get("EmailList", []):
-                try:
-                    orig_subj, orig_text = generate_email_text_base(lang, flight_info)
-                    
-                    cust_subj = st.session_state.custom_templates[lang]["subject"]
-                    cust_text = st.session_state.custom_templates[lang]["text"]
-                    
-                    final_subj = cust_subj if cust_subj else orig_subj
-                    raw_text = cust_text if cust_text else orig_text
-                    
-                    final_plain = render_custom_template(raw_text, pax)
-                    final_html = text_to_html(final_plain)
-
-                    send_email_smtp(sender_email, app_password, recipient, final_subj, final_plain, final_html)
-                    pax["SendStatus"] = "Sent Successfully"
-                    
-                    # Улаанбаатарын цагаар хадгалах (UTC+8)
-                    pax["SentTime"] = get_ubn_now()
-                    success_count += 1
-                except Exception as e:
-                    pax["SendStatus"] = f"Failed: {str(e)}"
-                    fail_count += 1
+            selected_pax = [r for r in st.session_state.records if r.get("Selected", True)]
+            success_count, fail_count = 0, 0
             
-            progress_bar.progress((i + 1) / len(selected_pax))
+            progress_bar = st.progress(0)
+            
+            for i, pax in enumerate(selected_pax):
+                lang = pax["Language"]
+                if lang == "N/A":
+                    if na_action == "SKIP":
+                        pax["SendStatus"] = "Skipped (N/A)"
+                        continue
+                    lang = na_action
 
-        st.success(f"Ажиллагаа дууслаа! Нийт амжилттай: {success_count}, Амжилтгүй: {fail_count}")
-        st.rerun()
+                for recipient in pax.get("EmailList", []):
+                    try:
+                        subject, plain_body, html_body = generate_email_for_passenger(pax, lang, flight_info)
+                        send_email_smtp(sender_email, app_password, recipient, subject, plain_body, html_body)
+                        pax["SendStatus"] = "Sent Successfully"
+                        pax["SentTime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        success_count += 1
+                    except Exception as e:
+                        pax["SendStatus"] = f"Failed: {str(e)}"
+                        fail_count += 1
+                
+                progress_bar.progress((i + 1) / len(selected_pax))
+
+            st.success(f"Ажиллагаа дууслаа! Нийт амжилттай: {success_count}, Амжилтгүй: {fail_count}")
+            st.rerun()
 
 with col_act2:
     all_data = st.session_state.records + st.session_state.missing_records
     if all_data:
         df_export = pd.DataFrame(all_data)
         
-        cols_to_drop = ["Selected", "SeqNo", "EmailList"]
-        df_export_cleaned = df_export.drop(columns=[c for c in cols_to_drop if c in df_export.columns])
-        
-        csv_data = df_export_cleaned.to_csv(index=False).encode('utf-8-sig')
-        
-        # Файлын нэрэнд мөн Улаанбаатарын цагийг ашиглах
-        ubn_file_time = datetime.now(ZoneInfo("Asia/Ulaanbaatar")).strftime("%Y%m%d_%H%M%S")
+        # Convert dataframe to CSV or Excel for download
+        csv_data = df_export.to_csv(index=False).encode('utf-8-sig')
         st.download_button(
-            label="📥 EXCEL тайлан татах",
+            label="📥 Excel/CSV Татах",
             data=csv_data,
-            file_name=f"PNL_Export_{ubn_file_time}.csv",
+            file_name=f"PNL_Export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
             mime="text/csv",
             use_container_width=True
         )
