@@ -205,7 +205,7 @@ def parse_pnl(text):
 
         record = {
             "Selected": True,
-            "SeqNo": "",
+            "SeqNo": str(valid_idx) if not missing_reasons else "",
             "PNLNo": pax["PNLNo"],
             "Passenger Name": pax["Passenger Name"],
             "PNR": pax["PNR"],
@@ -228,7 +228,6 @@ def parse_pnl(text):
             missing_data_records.append(record)
             missing_idx += 1
         else:
-            record["SeqNo"] = str(valid_idx)
             formatted_records.append(record)
             valid_idx += 1
 
@@ -239,9 +238,9 @@ def parse_pnl(text):
 # ============================================================
 
 def generate_email_for_passenger(record, target_lang, flight_info):
-    pax_name = record.get('Passenger Name') if record else "ЗОРЧИГЧ"
-    pnr_code = record.get('PNR') if record else "-"
-    tkt_no = record.get('TicketNo') if record else "-"
+    pax_name = record.get('Passenger Name') if record else "{PAX_NAME}"
+    pnr_code = record.get('PNR') if record else "{PNR}"
+    tkt_no = record.get('TicketNo') if record else "{TICKET_NO}"
 
     flt_no = flight_info['flight'] or (record.get('Flight') if record else "OM137")
     flt_date = flight_info['date'] or (record.get('Date') if record else "08NOV30")
@@ -334,6 +333,16 @@ We regret to inform you of a <b>schedule change</b> for your flight {flt_no} {fu
 
     return subject, plain_body, html_body
 
+def render_custom_template(template_html, record):
+    pax_name = record.get('Passenger Name', '') if record else "{PAX_NAME}"
+    pnr_code = record.get('PNR', '') if record else "{PNR}"
+    tkt_no = record.get('TicketNo', '') if record else "{TICKET_NO}"
+
+    rendered = template_html.replace("{PAX_NAME}", pax_name)
+    rendered = rendered.replace("{PNR}", pnr_code)
+    rendered = rendered.replace("{TICKET_NO}", tkt_no)
+    return rendered
+
 # ============================================================
 # SMTP SENDER
 # ============================================================
@@ -362,6 +371,12 @@ if "records" not in st.session_state:
     st.session_state.records = []
 if "missing_records" not in st.session_state:
     st.session_state.missing_records = []
+if "pnl_text" not in st.session_state:
+    st.session_state.pnl_text = ""
+if "custom_templates" not in st.session_state:
+    st.session_state.custom_templates = {"MN": {"subject": "", "html": ""}, "EN": {"subject": "", "html": ""}}
+if "edit_mode" not in st.session_state:
+    st.session_state.edit_mode = False
 
 # --- SIDEBAR: AUTHENTICATION ---
 with st.sidebar:
@@ -375,8 +390,9 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     st.subheader("1. Amadeus Passenger Name List (PNL)")
-    pnl_input = st.text_area("PNL Эх текст хуулах:", height=250)
-    
+    pnl_input = st.text_area("PNL Эх текст хуулах:", value=st.session_state.pnl_text, height=250, key="pnl_textarea")
+    st.session_state.pnl_text = pnl_input
+
     col_btn1, col_btn2 = st.columns([1, 1])
     if col_btn1.button("Extract PNL", type="primary"):
         if pnl_input.strip():
@@ -388,6 +404,9 @@ with col1:
     if col_btn2.button("Clear All"):
         st.session_state.records = []
         st.session_state.missing_records = []
+        st.session_state.pnl_text = ""
+        st.session_state.custom_templates = {"MN": {"subject": "", "html": ""}, "EN": {"subject": "", "html": ""}}
+        st.session_state.edit_mode = False
         st.rerun()
 
 with col2:
@@ -442,11 +461,10 @@ with tab1:
             use_container_width=True
         )
         
-        # DataFrame-ийн сонгогдсон төлвийг session_state руу буцааж синк хийх
+        # DataFrame-ийн сонгогдсон төлвийг session_state руу шууд синк хийх
         for idx, row in edited_df.iterrows():
             st.session_state.records[idx]["Selected"] = row["Selected"]
 
-        # STATS
         mn_cnt = sum(1 for r in st.session_state.records if r["Language"] == "MN" and r["Selected"])
         en_cnt = sum(1 for r in st.session_state.records if r["Language"] == "EN" and r["Selected"])
         na_cnt = sum(1 for r in st.session_state.records if r["Language"] == "N/A" and r["Selected"])
@@ -464,14 +482,73 @@ with tab2:
         st.info("Дутуу мэдээлэлтэй зорчигч байхгүй байна.")
 
 with tab3:
-    preview_lang = st.radio("Preview Хэл:", ["MN", "EN"], horizontal=True)
+    col_p1, col_p2, col_p3 = st.columns([2, 1, 1])
+    with col_p1:
+        preview_lang = st.radio("Preview Хэл:", ["MN", "EN"], horizontal=True)
+    with col_p2:
+        st.write("")
+        if st.button("✏️ Засах" if not st.session_state.edit_mode else "👁️ Харж шалгах"):
+            st.session_state.edit_mode = not st.session_state.edit_mode
+            st.rerun()
+    with col_p3:
+        st.write("")
+        if st.session_state.custom_templates[preview_lang]["html"]:
+            if st.button("🔄 Анхны хэвэнд нь оруулах"):
+                st.session_state.custom_templates[preview_lang] = {"subject": "", "html": ""}
+                st.session_state.edit_mode = False
+                st.rerun()
+
     sample_rec = st.session_state.records[0] if st.session_state.records else None
-    subj, _, html_content = generate_email_for_passenger(sample_rec, preview_lang, flight_info)
-    
-    st.markdown(f"**ГАРЧИГ / SUBJECT:** {subj}")
-    st.components.v1.html(html_content, height=350, scrolling=True)
+    orig_subj, orig_plain, orig_html = generate_email_for_passenger(sample_rec, preview_lang, flight_info)
+
+    curr_subj = st.session_state.custom_templates[preview_lang]["subject"] or orig_subj
+    curr_html = st.session_state.custom_templates[preview_lang]["html"] or orig_html
+
+    lbl_title = "ГАРЧИГ:" if preview_lang == "MN" else "SUBJECT:"
+
+    if st.session_state.edit_mode:
+        st.info("💡 Текст доторх `{PAX_NAME}`, `{PNR}`, `{TICKET_NO}` түлхүүр үгс нь зорчигч бүрийн мэдээллээр автоматаар солигдох болно.")
+        new_subj = st.text_input(f"{lbl_title}", value=curr_subj)
+        new_html = st.text_area("HTML Template Эх текст:", value=curr_html, height=300)
+        
+        st.session_state.custom_templates[preview_lang]["subject"] = new_subj
+        st.session_state.custom_templates[preview_lang]["html"] = new_html
+    else:
+        st.markdown(f"**{lbl_title}** {curr_subj}")
+        rendered_preview = render_custom_template(curr_html, sample_rec) if st.session_state.custom_templates[preview_lang]["html"] else curr_html
+        st.components.v1.html(rendered_preview, height=350, scrolling=True)
 
 st.divider()
+
+# --- DIALOG / MODAL FOR CONFIRMATION ---
+@st.dialog("Имэйл текстийг шалгах ба Баталгаажуулах", width="large")
+def confirm_and_send_dialog():
+    st.warning("⚠️ Дараах имэйлийн эх текст зорчигчид руу илгээгдэх гэж байна. Шалгаад 'Илгээх' эсвэл 'Засах' товчийг сонгоно уу.")
+    
+    tab_mn, tab_en = st.tabs(["🇲🇳 Монгол (MN)", "🇬🇧 Англи (EN)"])
+    sample_rec = st.session_state.records[0] if st.session_state.records else None
+    
+    with tab_mn:
+        orig_subj, _, orig_html = generate_email_for_passenger(sample_rec, "MN", flight_info)
+        s_subj = st.session_state.custom_templates["MN"]["subject"] or orig_subj
+        s_html = st.session_state.custom_templates["MN"]["html"] or orig_html
+        st.markdown(f"**ГАРЧИГ:** {s_subj}")
+        st.components.v1.html(render_custom_template(s_html, sample_rec), height=250, scrolling=True)
+        
+    with tab_en:
+        orig_subj_en, _, orig_html_en = generate_email_for_passenger(sample_rec, "EN", flight_info)
+        s_subj_en = st.session_state.custom_templates["EN"]["subject"] or orig_subj_en
+        s_html_en = st.session_state.custom_templates["EN"]["html"] or orig_html_en
+        st.markdown(f"**SUBJECT:** {s_subj_en}")
+        st.components.v1.html(render_custom_template(s_html_en, sample_rec), height=250, scrolling=True)
+        
+    col_d1, col_d2 = st.columns([1, 1])
+    if col_d1.button("✅ Зөв, одоо илгээх", type="primary", use_container_width=True):
+        st.session_state.start_send_process = True
+        st.rerun()
+        
+    if col_d2.button("✏️ Засах шаардлагатай", use_container_width=True):
+        st.rerun()
 
 # --- ACTIONS: SEND & EXPORT ---
 col_act1, col_act2 = st.columns([2, 1])
@@ -483,44 +560,59 @@ with col_act1:
         elif not st.session_state.records:
             st.warning("Илгээх зорчигч байхгүй байна.")
         else:
-            selected_pax = [r for r in st.session_state.records if r.get("Selected", True)]
-            success_count, fail_count = 0, 0
-            
-            progress_bar = st.progress(0)
-            
-            for i, pax in enumerate(selected_pax):
-                lang = pax["Language"]
-                if lang == "N/A":
-                    if na_action == "SKIP":
-                        pax["SendStatus"] = "Skipped (N/A)"
-                        continue
-                    lang = na_action
+            confirm_and_send_dialog()
 
-                for recipient in pax.get("EmailList", []):
-                    try:
-                        subject, plain_body, html_body = generate_email_for_passenger(pax, lang, flight_info)
-                        send_email_smtp(sender_email, app_password, recipient, subject, plain_body, html_body)
-                        pax["SendStatus"] = "Sent Successfully"
-                        pax["SentTime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        success_count += 1
-                    except Exception as e:
-                        pax["SendStatus"] = f"Failed: {str(e)}"
-                        fail_count += 1
-                
-                progress_bar.progress((i + 1) / len(selected_pax))
+    if st.session_state.get("start_send_process", False):
+        st.session_state.start_send_process = False
+        selected_pax = [r for r in st.session_state.records if r.get("Selected", True)]
+        success_count, fail_count = 0, 0
+        
+        progress_bar = st.progress(0)
+        
+        for i, pax in enumerate(selected_pax):
+            lang = pax["Language"]
+            if lang == "N/A":
+                if na_action == "SKIP":
+                    pax["SendStatus"] = "Skipped (N/A)"
+                    continue
+                lang = na_action
 
-            st.success(f"Ажиллагаа дууслаа! Нийт амжилттай: {success_count}, Амжилтгүй: {fail_count}")
-            st.rerun()
+            for recipient in pax.get("EmailList", []):
+                try:
+                    orig_subj, orig_plain, orig_html = generate_email_for_passenger(pax, lang, flight_info)
+                    
+                    cust_subj = st.session_state.custom_templates[lang]["subject"]
+                    cust_html = st.session_state.custom_templates[lang]["html"]
+                    
+                    final_subj = cust_subj if cust_subj else orig_subj
+                    final_html = render_custom_template(cust_html, pax) if cust_html else orig_html
+                    final_plain = orig_plain
+
+                    send_email_smtp(sender_email, app_password, recipient, final_subj, final_plain, final_html)
+                    pax["SendStatus"] = "Sent Successfully"
+                    pax["SentTime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    success_count += 1
+                except Exception as e:
+                    pax["SendStatus"] = f"Failed: {str(e)}"
+                    fail_count += 1
+            
+            progress_bar.progress((i + 1) / len(selected_pax))
+
+        st.success(f"Ажиллагаа дууслаа! Нийт амжилттай: {success_count}, Амжилтгүй: {fail_count}")
+        st.rerun()
 
 with col_act2:
     all_data = st.session_state.records + st.session_state.missing_records
     if all_data:
         df_export = pd.DataFrame(all_data)
         
-        # Convert dataframe to CSV or Excel for download
-        csv_data = df_export.to_csv(index=False).encode('utf-8-sig')
+        # Selected, SeqNo, EmailList багануудыг экспортлохоос хасах
+        cols_to_drop = ["Selected", "SeqNo", "EmailList"]
+        df_export_cleaned = df_export.drop(columns=[c for c in cols_to_drop if c in df_export.columns])
+        
+        csv_data = df_export_cleaned.to_csv(index=False).encode('utf-8-sig')
         st.download_button(
-            label="📥 Excel/CSV Татах",
+            label="📥 EXCEL тайлан татах",
             data=csv_data,
             file_name=f"PNL_Export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
             mime="text/csv",
