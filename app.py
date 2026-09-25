@@ -18,17 +18,20 @@ AIRPORT_NAMES = {
     "ULN": {"MN": "Улаанбаатар (Буянт-Ухаа)", "EN": "Ulaanbaatar (Old)"},
     "HVD": {"MN": "Ховд", "EN": "Khovd"},
     "ULG": {"MN": "Өлгий", "EN": "Olgii"},
-    "ULO": {"MN": "Улаангом", "EN": "Ulaangom"},
+    "UGA": {"MN": "Улаангом", "EN": "Ulaangom"},
     "UNR": {"MN": "Өндөрхаан (Чингис город)", "EN": "Undurkhaan"},
     "DLZ": {"MN": "Даланзадгад", "EN": "Dalanzadgad"},
     "LTI": {"MN": "Алтай", "EN": "Altai"},
-    "MXV": {"MN": "Мөрөн", "EN": "Moron"},
-    "ULZ": {"MN": "Улиастай (Донной)", "EN": "Uliastai"},
+    "MWR": {"MN": "Мөрөн", "EN": "Moron"},
+    "UZZ": {"MN": "Улиастай (Донной)", "EN": "Uliastai"},
     "COQ": {"MN": "Чойбалсан", "EN": "Choibalsan"},
     "BYN": {"MN": "Баянхонгор", "EN": "Bayankhongor"},
-    "KHB": {"MN": "Алтат (Оюут толгой)", "EN": "Khanbumbat / Oyu Tolgoi"},
+    "EAV": {"MN": "Алтат (Оюут толгой)", "EN": "Khanbumbat / Oyu Tolgoi"},
     "THN": {"MN": "Таван толгой", "EN": "Tavan Tolgoi"},
-    
+    "TST": {"MN": "Цагаан суварга", "EN": "Tsagaan Suvarga"},
+    "PST": {"MN": "Баян-Өндөр (Орхон)", "EN": "Erdenet"},
+    "TXN": {"MN": "Ташаанта", "EN": "Tashaanta"},
+
     # ==========================================
     # 2. ЗҮҮН АЗИ (East Asia)
     # ==========================================
@@ -299,8 +302,10 @@ def parse_pnl(text):
         if route_match:
             route = f"{route_match.group(1).upper()}-{route_match.group(2).upper()}"
 
+    # Зорчигчийн мөр уншихRegex шинэчлэлт:
+    # Жишээ: 206N 01BAZARGUR/YESUGEN DKDQI4 G HK 21SEP ULN3M3115
     passenger_pattern = re.compile(
-        r"^\s*(\d{3})\s+(?:\d{2})?(.+?)\s+([A-Z0-9]{5,8})(?:\s+([A-Z]{2})\s*(\d{2}[A-Z]{3})?)?", 
+        r"^\s*(\d{1,3})[A-Z]?\s+(?:\*\d{1,2}|\d{1,2})?\s*(.+?)\s+([A-Z0-9]{5,8})(?:\s+([A-Z]))?\s+([A-Z]{2})\s+(\d{2}[A-Z]{3})\s*([A-Z0-9]+)?",
         re.IGNORECASE
     )
     ticket_pattern = re.compile(r"FA\s+PAX\s+(\d{3}-\d{9,10})", re.IGNORECASE)
@@ -310,30 +315,28 @@ def parse_pnl(text):
 
     for line in lines:
         passenger_match = passenger_pattern.search(line)
-        if passenger_match and passenger_match.group(1).isdigit():
+        if passenger_match:
             if current is not None:
                 raw_passengers.append(current)
 
+            pnl_no = passenger_match.group(1)
             pax_name_raw = passenger_match.group(2).strip()
-            # Зорчигчийн нэрний эхэнд ирж буй *01, 01 гэх мэт илүүц дугаарыг арилгах
             pax_name_cleaned = re.sub(r"^\s*\*?\d{1,2}\s*", "", pax_name_raw)
 
             pnr = passenger_match.group(3).upper()
-            status_code = (passenger_match.group(4) or "").upper()
-            booking_date = (passenger_match.group(5) or "").upper()
-
-            if not status_code or not booking_date:
-                m_stat = re.search(r"\b([A-Z]{2})\s*(\d{2}[A-Z]{3})\b", line)
-                if m_stat:
-                    status_code = m_stat.group(1).upper()
-                    booking_date = m_stat.group(2).upper()
+            booking_class = (passenger_match.group(4) or "-").upper()
+            status_code = (passenger_match.group(5) or "-").upper()
+            booking_date = (passenger_match.group(6) or "-").upper()
+            office_code = (passenger_match.group(7) or "-").upper()
 
             current = {
-                "PNLNo": passenger_match.group(1),
+                "PNLNo": pnl_no,
                 "Passenger Name": pax_name_cleaned,
                 "PNR": pnr,
+                "Class": booking_class,
                 "Status Code": status_code,
                 "Booking Date": booking_date,
+                "OfficeCode": office_code,
                 "TicketNo": "-",
                 "emails_dict": {},
                 "Flight": flight_number,
@@ -378,7 +381,7 @@ def parse_pnl(text):
             missing_reasons.append("TKT дугааргүй")
 
         if status not in valid_statuses:
-            missing_reasons.append(f"{status if status else 'Нэг ч'} статусгүй/буруу статус")
+            missing_reasons.append(f"{status if status != '-' else 'Нэг ч'} статусгүй/буруу статус")
         
         if not joined_emails:
             missing_reasons.append("Имэйл хаяггүй")
@@ -389,8 +392,10 @@ def parse_pnl(text):
             "PNLNo": pax["PNLNo"],
             "Passenger Name": pax["Passenger Name"],
             "PNR": pax["PNR"],
-            "StatusCode": pax["Status Code"] or "-",
-            "BookingDate": pax["Booking Date"] or "-",
+            "Class": pax["Class"],
+            "StatusCode": pax["Status Code"],
+            "BookingDate": pax["Booking Date"],
+            "OfficeCode": pax["OfficeCode"],
             "TicketNo": pax["TicketNo"],
             "Email": joined_emails if joined_emails else "ОЛДООГҮЙ",
             "EmailList": emails_list,
@@ -605,14 +610,14 @@ with tab1:
             st.rerun()
 
         df_valid = pd.DataFrame(st.session_state.records)
-        cols_to_show = ["Selected", "SeqNo", "PNLNo", "Passenger Name", "PNR", "StatusCode", "BookingDate", "TicketNo", "Email", "Language", "SendStatus"]
+        cols_to_show = ["Selected", "SeqNo", "PNLNo", "Passenger Name", "PNR", "Class", "StatusCode", "BookingDate", "OfficeCode", "TicketNo", "Email", "Language", "SendStatus"]
         
         edited_df = st.data_editor(
             df_valid[cols_to_show],
             column_config={
                 "Selected": st.column_config.CheckboxColumn("Сонгох", default=True)
             },
-            disabled=["SeqNo", "PNLNo", "Passenger Name", "PNR", "StatusCode", "BookingDate", "TicketNo", "Email", "Language", "SendStatus"],
+            disabled=["SeqNo", "PNLNo", "Passenger Name", "PNR", "Class", "StatusCode", "BookingDate", "OfficeCode", "TicketNo", "Email", "Language", "SendStatus"],
             hide_index=True,
             use_container_width=True,
             key="passenger_editor"
@@ -627,7 +632,7 @@ with tab1:
 with tab2:
     if st.session_state.missing_records:
         df_missing = pd.DataFrame(st.session_state.missing_records)
-        cols_missing = ["SeqNo", "PNLNo", "Passenger Name", "PNR", "StatusCode", "BookingDate", "TicketNo", "Email", "MissingReason"]
+        cols_missing = ["SeqNo", "PNLNo", "Passenger Name", "PNR", "Class", "StatusCode", "BookingDate", "OfficeCode", "TicketNo", "Email", "MissingReason"]
         st.dataframe(df_missing[cols_missing], hide_index=True, use_container_width=True)
     else:
         st.info("Дутуу мэдээлэлтэй зорчигч байхгүй байна.")
