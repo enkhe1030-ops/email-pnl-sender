@@ -18,15 +18,15 @@ AIRPORT_NAMES = {
     "ULN": {"MN": "Улаанбаатар (Буянт-Ухаа)", "EN": "Ulaanbaatar (Old)"},
     "HVD": {"MN": "Ховд", "EN": "Khovd"},
     "ULG": {"MN": "Өлгий", "EN": "Olgii"},
-    "ULO": {"MN": "Улаангом", "EN": "Ulaangom"},
+    "UGA": {"MN": "Улаангом", "EN": "Ulaangom"},
     "UNR": {"MN": "Өндөрхаан (Чингис город)", "EN": "Undurkhaan"},
     "DLZ": {"MN": "Даланзадгад", "EN": "Dalanzadgad"},
     "LTI": {"MN": "Алтай", "EN": "Altai"},
-    "MXV": {"MN": "Мөрөн", "EN": "Moron"},
-    "ULZ": {"MN": "Улиастай (Донной)", "EN": "Uliastai"},
+    "MWR": {"MN": "Мөрөн", "EN": "Moron"},
+    "UZZ": {"MN": "Улиастай (Донной)", "EN": "Uliastai"},
     "COQ": {"MN": "Чойбалсан", "EN": "Choibalsan"},
     "BYN": {"MN": "Баянхонгор", "EN": "Bayankhongor"},
-    "KHB": {"MN": "Ханбумбат (Оюут толгой)", "EN": "Khanbumbat / Oyu Tolgoi"},
+    "EAV": {"MN": "Алтат (Оюут толгой)", "EN": "Khanbumbat / Oyu Tolgoi"},
     "THN": {"MN": "Таван толгой", "EN": "Tavan Tolgoi"},
     "TST": {"MN": "Цагаан суварга", "EN": "Tsagaan Suvarga"},
     "PST": {"MN": "Баян-Өндөр (Орхон)", "EN": "Erdenet"},
@@ -377,7 +377,10 @@ def parse_pnl(text):
         if pax["TicketNo"] == "-":
             missing_reasons.append("TKT дугааргүй")
 
-        if status not in valid_statuses:
+        # STATUS-ИЙН ЛОГИК: UC ХАРУУЛАХ ТУСГАЙ НӨХЦӨЛ
+        if status == "UC":
+            missing_reasons.append("Статус UC")
+        elif status not in valid_statuses:
             missing_reasons.append(f"{status if status != '-' else 'Нэг ч'} статусгүй/буруу статус")
         
         if not joined_emails:
@@ -712,7 +715,6 @@ with tab3:
             st.session_state.custom_templates[preview_lang]["text"] = new_text
         else:
             # ЗӨВХӨН 1 зорчигч сонгогдсон үед тухайн зорчигчийн мэдээллээр орлуулна.
-            # Олон/бүх зорчигч сонгосон үед sample_rec = None байж түлхүүр үгс (placeholder) хэвээрээ байна.
             sample_rec = selected_passengers[0] if selected_cnt == 1 else None
             
             st.markdown(f"**{lbl_title}** {curr_subj}")
