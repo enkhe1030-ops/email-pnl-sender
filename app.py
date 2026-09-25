@@ -35,7 +35,6 @@ AIRPORT_NAMES = {
     # ==========================================
     # 2. ЗҮҮН АЗИ (East Asia)
     # ==========================================
-    # БНСУ (South Korea)
     "ICN": {"MN": "Сөүл (Инчон)", "EN": "Seoul (Incheon)"},
     "GMP": {"MN": "Сөүл (Кимпо)", "EN": "Seoul (Gimpo)"},
     "PUS": {"MN": "Пусан", "EN": "Busan"},
@@ -43,7 +42,6 @@ AIRPORT_NAMES = {
     "TAE": {"MN": "Тэгү", "EN": "Daegu"},
     "CJJ": {"MN": "Чонжу", "EN": "Cheongju"},
 
-    # Япон (Japan)
     "NRT": {"MN": "Токио (Нарита)", "EN": "Tokyo (Narita)"},
     "HND": {"MN": "Токио (Ханеда)", "EN": "Tokyo (Haneda)"},
     "KIX": {"MN": "Осака (Кансай)", "EN": "Osaka (Kansai)"},
@@ -53,7 +51,6 @@ AIRPORT_NAMES = {
     "FUK": {"MN": "Фукуока", "EN": "Fukuoka"},
     "OKA": {"MN": "Окинава", "EN": "Okinawa"},
 
-    # БНХАУ (China)
     "PEK": {"MN": "Бээжин (Капитал)", "EN": "Beijing (Capital)"},
     "PKX": {"MN": "Бээжин (Дашин)", "EN": "Beijing (Daxing)"},
     "PVG": {"MN": "Шанхай (Пудон)", "EN": "Shanghai (Pudong)"},
@@ -130,7 +127,6 @@ AIRPORT_NAMES = {
     # ==========================================
     # 7. ЕВРОП & ИРЛАНД (Europe & Ireland)
     # ==========================================
-    # Их Британи & Ирланд (UK & Ireland)
     "LHR": {"MN": "Лондон (Хитроу)", "EN": "London (Heathrow)"},
     "LGW": {"MN": "Лондон (Гатвик)", "EN": "London (Gatwick)"},
     "STN": {"MN": "Лондон (Станстед)", "EN": "London (Stansted)"},
@@ -142,14 +138,12 @@ AIRPORT_NAMES = {
     "ORK": {"MN": "Корг", "EN": "Cork"},
     "SNN": {"MN": "Шэннон", "EN": "Shannon"},
 
-    # Скандинавын орнууд (Nordic)
     "GOT": {"MN": "Гётеборг", "EN": "Gothenburg"},
     "ARN": {"MN": "Стокгольм", "EN": "Stockholm"},
     "CPH": {"MN": "Копенгаген", "EN": "Copenhagen"},
     "OSL": {"MN": "Осло", "EN": "Oslo"},
     "HEL": {"MN": "Хельсинки", "EN": "Helsinki"},
 
-    # Бусад Европ
     "FRA": {"MN": "Франкфурт", "EN": "Frankfurt"},
     "MUC": {"MN": "Мюнхен", "EN": "Munich"},
     "BER": {"MN": "Берлин", "EN": "Berlin"},
@@ -378,17 +372,15 @@ def parse_pnl(text):
         status = pax["Status Code"]
         missing_reasons = []
 
-        # HL, UC, TL статусуудыг дутуу мэдээлэлд тооцно
-        if status in ["HL", "UC", "TL"]:
-            missing_reasons.append(f"{status} статус")
-        
-        # Имэйл хаяггүй
-        if not joined_emails:
-            missing_reasons.append("Имэйл хаяггүй")
-            
-        # Тийзийн дугааргүй
+        # TKT дугааргүй, UC, UN, HL, TL статус, имэйлгүй тохиолдолд дутуу мэдээлэлд тооцно
         if pax["TicketNo"] == "-":
             missing_reasons.append("TKT дугааргүй")
+
+        if status in ["UC", "UN", "HL", "TL"]:
+            missing_reasons.append(f"{status} статус")
+        
+        if not joined_emails:
+            missing_reasons.append("Имэйл хаяггүй")
 
         record = {
             "Selected": True,
@@ -536,11 +528,11 @@ col1, col2 = st.columns([1, 1])
 with col1:
     st.subheader("1. Amadeus Passenger Name List (PNL)")
     pnl_input = st.text_area("PNL Эх текст хуулах:", value=st.session_state.pnl_text, height=250, key="pnl_textarea")
-    st.session_state.pnl_text = pnl_input
 
     col_btn1, col_btn2 = st.columns([1, 1])
     if col_btn1.button("Extract PNL", type="primary"):
         if pnl_input.strip():
+            st.session_state.pnl_text = pnl_input
             st.session_state.records, st.session_state.missing_records = parse_pnl(pnl_input)
             st.success("PNL амжилттай уншигдлаа!")
         else:
@@ -552,12 +544,14 @@ with col1:
         st.session_state.pnl_text = ""
         st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
         st.session_state.edit_mode = False
+        if "pnl_textarea" in st.session_state:
+            st.session_state.pnl_textarea = ""
         st.rerun()
 
 with col2:
     st.subheader("2. Нислэгийн Мэдээлэл")
     
-    first_pax = st.session_state.records[0] if st.session_state.records else {}
+    first_pax = st.session_state.records[0] if st.session_state.records else (st.session_state.missing_records[0] if st.session_state.missing_records else {})
     
     status_type = st.radio("Мэдэгдлийн төрөл:", ["CHANGE", "CANCEL"], format_func=lambda x: "Schedule Change (Өөрчлөгдсөн)" if x == "CHANGE" else "Flight Cancelled (Цуцлагдсан)", horizontal=True)
     
@@ -625,9 +619,14 @@ with tab1:
         en_cnt = sum(1 for r in st.session_state.records if r["Language"] == "EN" and r["Selected"])
         na_cnt = sum(1 for r in st.session_state.records if r["Language"] == "N/A" and r["Selected"])
         
-        st.write(f"**Сонгогдсон МЭДЭЭЛЭЛ:** 🔵 MN: {mn_cnt} | 🟢 EN: {en_cnt} | 🔴 N/A: {na_cnt}")
+        no_tkt_cnt = sum(1 for r in st.session_state.missing_records if "TKT дугааргүй" in r["MissingReason"])
+        no_email_cnt = sum(1 for r in st.session_state.missing_records if "Имэйл хаяггүй" in r["MissingReason"])
+        
+        total_pax = len(st.session_state.records) + len(st.session_state.missing_records)
+        
+        st.write(f"**Мэдээлэл:** 🔵 MN: {mn_cnt} | 🟢 EN: {en_cnt} | 🔴 N/A: {na_cnt} | 🎟️ TKT-гүй: {no_tkt_cnt} | 📧 Имэйлгүй: {no_email_cnt} | 👥 **Нийт зорчигчид:** {total_pax}")
     else:
-        st.info("Одоогоор уншигдсан зорчигч байхгүй байна.")
+        st.info("Одоогоор уншигдсан идэвхтэй зорчигч байхгүй байна.")
 
 with tab2:
     if st.session_state.missing_records:
@@ -750,8 +749,6 @@ with col_act1:
 
                     send_email_smtp(sender_email, app_password, recipient, final_subj, final_plain, final_html)
                     pax["SendStatus"] = "Sent Successfully"
-                    
-                    # Улаанбаатарын цагаар хадгалах (UTC+8)
                     pax["SentTime"] = get_ubn_now()
                     success_count += 1
                 except Exception as e:
@@ -773,7 +770,6 @@ with col_act2:
         
         csv_data = df_export_cleaned.to_csv(index=False).encode('utf-8-sig')
         
-        # Файлын нэрэнд мөн Улаанбаатарын цагийг ашиглах
         ubn_file_time = datetime.now(ZoneInfo("Asia/Ulaanbaatar")).strftime("%Y%m%d_%H%M%S")
         st.download_button(
             label="📥 EXCEL тайлан татах",
