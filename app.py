@@ -318,6 +318,9 @@ def parse_pnl(text):
                 raw_passengers.append(current)
 
             pax_name_raw = passenger_match.group(2).strip()
+            # Зорчигчийн нэрний эхэнд ирж буй *01, 01 гэх мэт илүүц дугаарыг арилгах
+            pax_name_cleaned = re.sub(r"^\s*\*?\d{1,2}\s*", "", pax_name_raw)
+
             pnr = passenger_match.group(3).upper()
             status_code = (passenger_match.group(4) or "").upper()
             booking_date = (passenger_match.group(5) or "").upper()
@@ -330,7 +333,7 @@ def parse_pnl(text):
 
             current = {
                 "PNLNo": passenger_match.group(1),
-                "Passenger Name": pax_name_raw,
+                "Passenger Name": pax_name_cleaned,
                 "PNR": pnr,
                 "Status Code": status_code,
                 "Booking Date": booking_date,
@@ -362,6 +365,8 @@ def parse_pnl(text):
     formatted_records, missing_data_records = [], []
     valid_idx, missing_idx = 1, 1
 
+    valid_statuses = ["HK", "TK", "SA", "RR"]
+
     for pax in raw_passengers:
         emails_list = list(pax["emails_dict"].keys())
         langs_list = list(pax["emails_dict"].values())
@@ -375,15 +380,15 @@ def parse_pnl(text):
         if pax["TicketNo"] == "-":
             missing_reasons.append("TKT дугааргүй")
 
-        if status in ["UC", "UN", "HL", "TL"]:
-            missing_reasons.append(f"{status} статус")
+        if status not in valid_statuses:
+            missing_reasons.append(f"{status if status else 'Нэг ч'} статусгүй/буруу статус")
         
         if not joined_emails:
             missing_reasons.append("Имэйл хаяггүй")
 
         record = {
             "Selected": True,
-            "SeqNo": str(valid_idx) if not missing_reasons else "",
+            "SeqNo": "",
             "PNLNo": pax["PNLNo"],
             "Passenger Name": pax["Passenger Name"],
             "PNR": pax["PNR"],
@@ -406,6 +411,7 @@ def parse_pnl(text):
             missing_data_records.append(record)
             missing_idx += 1
         else:
+            record["SeqNo"] = str(valid_idx)
             formatted_records.append(record)
             valid_idx += 1
 
@@ -495,7 +501,7 @@ def send_email_smtp(sender_email, app_password, recipient_email, subject, plain_
         server.send_message(msg)
 
 # ============================================================
-# CLEAR ALL CALLBACK FUNCTION (Алдаанаас сэргийлэх шийдэл)
+# CLEAR ALL CALLBACK FUNCTION
 # ============================================================
 
 def clear_all_data():
@@ -618,16 +624,6 @@ with tab1:
         for idx, row in edited_df.iterrows():
             st.session_state.records[idx]["Selected"] = row["Selected"]
 
-        mn_cnt = sum(1 for r in st.session_state.records if r["Language"] == "MN" and r["Selected"])
-        en_cnt = sum(1 for r in st.session_state.records if r["Language"] == "EN" and r["Selected"])
-        na_cnt = sum(1 for r in st.session_state.records if r["Language"] == "N/A" and r["Selected"])
-        
-        no_tkt_cnt = sum(1 for r in st.session_state.missing_records if "TKT дугааргүй" in r["MissingReason"])
-        no_email_cnt = sum(1 for r in st.session_state.missing_records if "Имэйл хаяггүй" in r["MissingReason"])
-        
-        total_pax = len(st.session_state.records) + len(st.session_state.missing_records)
-        
-        st.write(f"**Мэдээлэл:** 🔵 MN: {mn_cnt} | 🟢 EN: {en_cnt} | 🔴 N/A: {na_cnt} | 🎟️ TKT-гүй: {no_tkt_cnt} | 📧 Имэйлгүй: {no_email_cnt} | 👥 **Нийт зорчигчид:** {total_pax}")
     else:
         st.info("Одоогоор уншигдсан идэвхтэй зорчигч байхгүй байна.")
 
@@ -638,6 +634,17 @@ with tab2:
         st.dataframe(df_missing[cols_missing], hide_index=True, use_container_width=True)
     else:
         st.info("Дутуу мэдээлэлтэй зорчигч байхгүй байна.")
+
+# Нийт статистик тоо баримтыг доор нэгтгэн харуулах
+active_cnt = len(st.session_state.records)
+missing_cnt = len(st.session_state.missing_records)
+total_pax = active_cnt + missing_cnt
+
+mn_cnt = sum(1 for r in st.session_state.records if r["Language"] == "MN" and r["Selected"])
+en_cnt = sum(1 for r in st.session_state.records if r["Language"] == "EN" and r["Selected"])
+na_cnt = sum(1 for r in st.session_state.records if r["Language"] == "N/A" and r["Selected"])
+
+st.write(f"**Мэдээлэл:** 🔵 MN: {mn_cnt} | 🟢 EN: {en_cnt} | 🔴 N/A: {na_cnt} | 📋 Идэвхтэй: {active_cnt} | ⚠️ Мэдээлэл Дутуу: {missing_cnt} | 👥 **Нийт зорчигчид:** {total_pax}")
 
 with tab3:
     col_p1, col_p2, col_p3 = st.columns([2, 1, 1])
