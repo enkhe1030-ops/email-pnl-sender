@@ -473,9 +473,9 @@ def text_to_html(plain_text):
     return f'<div style="font-family: Calibri, sans-serif; font-size: 11pt; line-height: 1.5;">{formatted}</div>'
 
 def render_custom_template(template_text, record):
-    pax_name = record.get('Passenger Name', '') if record else "{PAX_NAME}"
-    pnr_code = record.get('PNR', '') if record else "{PNR}"
-    tkt_no = record.get('TicketNo', '') if record else "{TICKET_NO}"
+    pax_name = record.get('Passenger Name', '{PAX_NAME}') if record else "{PAX_NAME}"
+    pnr_code = record.get('PNR', '{PNR}') if record else "{PNR}"
+    tkt_no = record.get('TicketNo', '{TICKET_NO}') if record else "{TICKET_NO}"
 
     rendered = template_text.replace("{PAX_NAME}", pax_name)
     rendered = rendered.replace("{PNR}", pnr_code)
@@ -667,50 +667,59 @@ active_cnt = len(st.session_state.records)
 missing_cnt = len(st.session_state.missing_records)
 total_pax = active_cnt + missing_cnt
 
-mn_cnt = sum(1 for r in st.session_state.records if r["Language"] == "MN" and r["Selected"])
-en_cnt = sum(1 for r in st.session_state.records if r["Language"] == "EN" and r["Selected"])
-na_cnt = sum(1 for r in st.session_state.records if r["Language"] == "N/A" and r["Selected"])
+selected_passengers = [r for r in st.session_state.records if r.get("Selected", False)]
+selected_cnt = len(selected_passengers)
 
-st.write(f"**Мэдээлэл:** 🔵 MN: {mn_cnt} | 🟢 EN: {en_cnt} | 🔴 N/A: {na_cnt} | 📋 Идэвхтэй: {active_cnt} | ⚠️ Мэдээлэл Дутуу: {missing_cnt} | 👥 **Нийт зорчигчид:** {total_pax}")
+mn_cnt = sum(1 for r in selected_passengers if r["Language"] == "MN")
+en_cnt = sum(1 for r in selected_passengers if r["Language"] == "EN")
+na_cnt = sum(1 for r in selected_passengers if r["Language"] == "N/A")
+
+st.write(f"**Мэдээлэл:** 🔵 MN: {mn_cnt} | 🟢 EN: {en_cnt} | 🔴 N/A: {na_cnt} | 🎯 Сонгогдсон: {selected_cnt}/{active_cnt} | ⚠️ Мэдээлэл Дутуу: {missing_cnt} | 👥 **Нийт зорчигчид:** {total_pax}")
 
 with tab3:
-    col_p1, col_p2, col_p3 = st.columns([2, 1, 1])
-    with col_p1:
-        preview_lang = st.radio("Preview Хэл:", ["MN", "EN"], horizontal=True)
-    with col_p2:
-        st.write("")
-        if st.button("✏️ Засах" if not st.session_state.edit_mode else "👁️ Харж шалгах"):
-            st.session_state.edit_mode = not st.session_state.edit_mode
-            st.rerun()
-    with col_p3:
-        st.write("")
-        if st.session_state.custom_templates[preview_lang]["text"]:
-            if st.button("🔄 Анхны хувилбар"):
-                st.session_state.custom_templates[preview_lang] = {"subject": "", "text": ""}
-                st.session_state.edit_mode = False
-                st.rerun()
-
-    orig_subj, orig_text = generate_email_text_base(preview_lang, flight_info)
-
-    curr_subj = st.session_state.custom_templates[preview_lang]["subject"] or orig_subj
-    curr_text = st.session_state.custom_templates[preview_lang]["text"] or orig_text
-
-    lbl_title = "ГАРЧИГ:" if preview_lang == "MN" else "SUBJECT:"
-
-    if st.session_state.edit_mode:
-        st.info("💡 Текст доторх `{PAX_NAME}`, `{PNR}`, `{TICKET_NO}` түлхүүр үгс нь зорчигч бүрийн мэдээллээр автоматаар солигдох болно.")
-        new_subj = st.text_input(f"{lbl_title}", value=curr_subj)
-        new_text = st.text_area("Засах боломжтой эх текст:", value=curr_text, height=320)
-        
-        st.session_state.custom_templates[preview_lang]["subject"] = new_subj
-        st.session_state.custom_templates[preview_lang]["text"] = new_text
+    if selected_cnt == 0:
+        st.warning("⚠️ Сонгосон зорчигч байхгүй байна. Та 'Идэвхтэй Зорчигчид' жагсаалтаас доод тал нь 1 зорчигч сонгоно уу.")
     else:
-        sample_rec = st.session_state.records[0] if st.session_state.records else None
-        st.markdown(f"**{lbl_title}** {curr_subj}")
-        
-        rendered_plain = render_custom_template(curr_text, sample_rec)
-        rendered_html = text_to_html(rendered_plain)
-        st.components.v1.html(rendered_html, height=350, scrolling=True)
+        col_p1, col_p2, col_p3 = st.columns([2, 1, 1])
+        with col_p1:
+            preview_lang = st.radio("Preview Хэл:", ["MN", "EN"], horizontal=True)
+        with col_p2:
+            st.write("")
+            if st.button("✏️ Засах" if not st.session_state.edit_mode else "👁️ Харж шалгах"):
+                st.session_state.edit_mode = not st.session_state.edit_mode
+                st.rerun()
+        with col_p3:
+            st.write("")
+            if st.session_state.custom_templates[preview_lang]["text"]:
+                if st.button("🔄 Анхны хувилбар"):
+                    st.session_state.custom_templates[preview_lang] = {"subject": "", "text": ""}
+                    st.session_state.edit_mode = False
+                    st.rerun()
+
+        orig_subj, orig_text = generate_email_text_base(preview_lang, flight_info)
+
+        curr_subj = st.session_state.custom_templates[preview_lang]["subject"] or orig_subj
+        curr_text = st.session_state.custom_templates[preview_lang]["text"] or orig_text
+
+        lbl_title = "ГАРЧИГ:" if preview_lang == "MN" else "SUBJECT:"
+
+        if st.session_state.edit_mode:
+            st.info("💡 Текст доторх `{PAX_NAME}`, `{PNR}`, `{TICKET_NO}` түлхүүр үгс нь зорчигч бүрийн мэдээллээр автоматаар солигдох болно.")
+            new_subj = st.text_input(f"{lbl_title}", value=curr_subj)
+            new_text = st.text_area("Засах боломжтой эх текст:", value=curr_text, height=320)
+            
+            st.session_state.custom_templates[preview_lang]["subject"] = new_subj
+            st.session_state.custom_templates[preview_lang]["text"] = new_text
+        else:
+            # ЗӨВХӨН 1 зорчигч сонгогдсон үед тухайн зорчигчийн мэдээллээр орлуулна.
+            # Олон/бүх зорчигч сонгосон үед sample_rec = None байж түлхүүр үгс (placeholder) хэвээрээ байна.
+            sample_rec = selected_passengers[0] if selected_cnt == 1 else None
+            
+            st.markdown(f"**{lbl_title}** {curr_subj}")
+            
+            rendered_plain = render_custom_template(curr_text, sample_rec)
+            rendered_html = text_to_html(rendered_plain)
+            st.components.v1.html(rendered_html, height=350, scrolling=True)
 
 st.divider()
 
@@ -720,7 +729,7 @@ def confirm_and_send_dialog():
     st.warning("⚠️ Дараах имэйлийн эх текст зорчигчид руу илгээгдэх гэж байна. Шалгаад 'Илгээх' эсвэл 'Засах' товчийг сонгоно уу.")
     
     tab_mn, tab_en = st.tabs(["🇲🇳 Монгол (MN)", "🇬🇧 Англи (EN)"])
-    sample_rec = st.session_state.records[0] if st.session_state.records else None
+    sample_rec = selected_passengers[0] if len(selected_passengers) == 1 else None
     
     with tab_mn:
         orig_subj, orig_text = generate_email_text_base("MN", flight_info)
@@ -753,17 +762,18 @@ with col_act1:
             st.error("Систем нэвтрэх Gmail хаяг болон App Password оруулаагүй байна!")
         elif not st.session_state.records:
             st.warning("Илгээх зорчигч байхгүй байна.")
+        elif selected_cnt == 0:
+            st.warning("Нэг ч зорчигч сонгогдоогүй байна.")
         else:
             confirm_and_send_dialog()
 
     if st.session_state.get("start_send_process", False):
         st.session_state.start_send_process = False
-        selected_pax = [r for r in st.session_state.records if r.get("Selected", True)]
         success_count, fail_count = 0, 0
         
         progress_bar = st.progress(0)
         
-        for i, pax in enumerate(selected_pax):
+        for i, pax in enumerate(selected_passengers):
             lang = pax["Language"]
             if lang == "N/A":
                 if na_action == "SKIP":
@@ -792,7 +802,7 @@ with col_act1:
                     pax["SendStatus"] = f"Failed: {str(e)}"
                     fail_count += 1
             
-            progress_bar.progress((i + 1) / len(selected_pax))
+            progress_bar.progress((i + 1) / len(selected_passengers))
 
         st.success(f"Ажиллагаа дууслаа! Нийт амжилттай: {success_count}, Амжилтгүй: {fail_count}")
         st.rerun()
