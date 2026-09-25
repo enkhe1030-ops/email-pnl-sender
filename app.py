@@ -150,7 +150,7 @@ def is_valid_email(email):
     return bool(re.match(email_regex, email))
 
 # ============================================================
-# PARSE AMADEUS PNL (221/221 ЗОРЧИГЧИЙГ БҮҮРЭН УНШИХ)
+# PARSE AMADEUS PNL (221/221 ЗОРЧИГЧИЙГ 100% УНШИХ)
 # ============================================================
 
 def parse_pnl(text):
@@ -172,9 +172,9 @@ def parse_pnl(text):
         if route_match:
             route = f"{route_match.group(1).upper()}-{route_match.group(2).upper()}"
 
-    # Сайжруулсан Регулар Экспрешн: БҮХ 221 зорчигчийг уншина
+    # 221 зорчигчийг алдалгүй унших шинэчилсэн Regex
     passenger_pattern = re.compile(
-        r"^\s*(\d{3})\s+(?:\*\d{2}|\d{2})?\s*(.+?)\s+([A-Z0-9]{5,8})(?:\s+([A-Z]{2})\s*(\d{2}[A-Z]{3})?)?", 
+        r"^\s*(\d{3})\s+(?:\*[A-Z0-9]{2,4}\s+|\d{2}\s+)?(.+?)\s+([A-Z0-9]{5,8})(?:\s+([A-Z]{2})\s*(\d{2}[A-Z]{3})?)?", 
         re.IGNORECASE
     )
     ticket_pattern = re.compile(r"FA\s+PAX\s+(\d{3}-\d{9,10})", re.IGNORECASE)
@@ -245,15 +245,12 @@ def parse_pnl(text):
         status = pax["Status Code"]
         missing_reasons = []
 
-        # 1. TKT шалгах
         if pax["TicketNo"] == "-":
             missing_reasons.append("ТKT дугааргүй")
 
-        # 2. Статус шалгах
         if status not in valid_statuses:
             missing_reasons.append(f"{status if status else 'Нэг ч'} статусгүй/буруу статус")
         
-        # 3. Имэйл шалгах
         if not joined_emails:
             missing_reasons.append("Имэйл хаяггүй")
 
@@ -461,6 +458,26 @@ active_count = len(st.session_state.records)
 missing_count = len(st.session_state.missing_records)
 total_pax = active_count + missing_count
 
+# Хэлний тоолол
+all_records = st.session_state.records + st.session_state.missing_records
+mn_cnt = sum(1 for r in all_records if r.get("Language") == "MN")
+en_cnt = sum(1 for r in all_records if r.get("Language") == "EN")
+na_cnt = sum(1 for r in all_records if r.get("Language") == "N/A")
+
+mn_pct = (mn_cnt / total_pax * 100) if total_pax > 0 else 0
+en_pct = (en_cnt / total_pax * 100) if total_pax > 0 else 0
+na_pct = (na_cnt / total_pax * 100) if total_pax > 0 else 0
+
+# Мэдээллийн нэгдсэн хэлхээ (Статистик)
+info_msg = (
+    f"📋 **Идэвхтэй Зорчигчид:** {active_count} | "
+    f"⚠️ **Мэдээлэл Дутуу Зорчигчид:** {missing_count} | "
+    f"👥 **Нийт Зорчигчид:** {total_pax} | "
+    f"🇲🇳 **MN:** {mn_cnt} ({mn_pct:.1f}%) | "
+    f"🇬🇧 **EN:** {en_cnt} ({en_pct:.1f}%) | "
+    f"❓ **N/A:** {na_cnt} ({na_pct:.1f}%)"
+)
+
 with tab1:
     if st.session_state.records:
         col_s1, col_s2, col_s3 = st.columns([1, 1, 3])
@@ -491,8 +508,7 @@ with tab1:
         for idx, row in edited_df.iterrows():
             st.session_state.records[idx]["Selected"] = row["Selected"]
 
-        # Шинэчлэгдсэн тоолох формат:
-        st.info(f"📋 **Идэвхтэй Зорчигчид:** {active_count} | ⚠️ **Мэдээлэл Дутуу Зорчигчид:** {missing_count} | 👥 **Нийт Зорчигчид:** {total_pax}")
+        st.info(info_msg)
     else:
         st.info("Одоогоор уншигдсан идэвхтэй зорчигч байхгүй байна.")
 
@@ -501,7 +517,7 @@ with tab2:
         df_missing = pd.DataFrame(st.session_state.missing_records)
         cols_missing = ["SeqNo", "PNLNo", "Passenger Name", "PNR", "StatusCode", "BookingDate", "TicketNo", "Email", "MissingReason"]
         st.dataframe(df_missing[cols_missing], hide_index=True, use_container_width=True)
-        st.warning(f"⚠️ **Мэдээлэл Дутуу Зорчигчид:** {missing_count} | 👥 **Нийт Зорчигчид:** {total_pax}")
+        st.warning(info_msg)
     else:
         st.info("Дутуу мэдээлэлтэй зорчигч байхгүй байна.")
 
