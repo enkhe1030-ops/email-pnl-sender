@@ -18,20 +18,17 @@ AIRPORT_NAMES = {
     "ULN": {"MN": "Улаанбаатар (Буянт-Ухаа)", "EN": "Ulaanbaatar (Old)"},
     "HVD": {"MN": "Ховд", "EN": "Khovd"},
     "ULG": {"MN": "Өлгий", "EN": "Olgii"},
-    "UGA": {"MN": "Улаангом", "EN": "Ulaangom"},
+    "ULO": {"MN": "Улаангом", "EN": "Ulaangom"},
     "UNR": {"MN": "Өндөрхаан (Чингис город)", "EN": "Undurkhaan"},
     "DLZ": {"MN": "Даланзадгад", "EN": "Dalanzadgad"},
     "LTI": {"MN": "Алтай", "EN": "Altai"},
-    "MWR": {"MN": "Мөрөн", "EN": "Moron"},
-    "UZZ": {"MN": "Улиастай (Донной)", "EN": "Uliastai"},
+    "MXV": {"MN": "Мөрөн", "EN": "Moron"},
+    "ULZ": {"MN": "Улиастай (Донной)", "EN": "Uliastai"},
     "COQ": {"MN": "Чойбалсан", "EN": "Choibalsan"},
     "BYN": {"MN": "Баянхонгор", "EN": "Bayankhongor"},
-    "EAV": {"MN": "Алтат (Оюут толгой)", "EN": "Khanbumbat / Oyu Tolgoi"},
+    "KHB": {"MN": "Алтат (Оюут толгой)", "EN": "Khanbumbat / Oyu Tolgoi"},
     "THN": {"MN": "Таван толгой", "EN": "Tavan Tolgoi"},
-    "TST": {"MN": "Цагаан суварга", "EN": "Tsagaan Suvarga"},
-    "PST": {"MN": "Баян-Өндөр (Орхон)", "EN": "Erdenet"},
-    "TXN": {"MN": "Ташаанта", "EN": "Tashaanta"},
-
+    
     # ==========================================
     # 2. ЗҮҮН АЗИ (East Asia)
     # ==========================================
