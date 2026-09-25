@@ -18,15 +18,15 @@ AIRPORT_NAMES = {
     "ULN": {"MN": "Улаанбаатар (Буянт-Ухаа)", "EN": "Ulaanbaatar (Old)"},
     "HVD": {"MN": "Ховд", "EN": "Khovd"},
     "ULG": {"MN": "Өлгий", "EN": "Olgii"},
-    "UGA": {"MN": "Улаангом", "EN": "Ulaangom"},
+    "ULO": {"MN": "Улаангом", "EN": "Ulaangom"},
     "UNR": {"MN": "Өндөрхаан (Чингис город)", "EN": "Undurkhaan"},
     "DLZ": {"MN": "Даланзадгад", "EN": "Dalanzadgad"},
     "LTI": {"MN": "Алтай", "EN": "Altai"},
-    "MWR": {"MN": "Мөрөн", "EN": "Moron"},
-    "UZZ": {"MN": "Улиастай (Донной)", "EN": "Uliastai"},
+    "MXV": {"MN": "Мөрөн", "EN": "Moron"},
+    "ULZ": {"MN": "Улиастай (Донной)", "EN": "Uliastai"},
     "COQ": {"MN": "Чойбалсан", "EN": "Choibalsan"},
     "BYN": {"MN": "Баянхонгор", "EN": "Bayankhongor"},
-    "EAV": {"MN": "Алтат (Оюут толгой)", "EN": "Khanbumbat / Oyu Tolgoi"},
+    "KHB": {"MN": "Алтат (Оюут толгой)", "EN": "Khanbumbat / Oyu Tolgoi"},
     "THN": {"MN": "Таван толгой", "EN": "Tavan Tolgoi"},
     "TST": {"MN": "Цагаан суварга", "EN": "Tsagaan Suvarga"},
     "PST": {"MN": "Баян-Өндөр (Орхон)", "EN": "Erdenet"},
@@ -80,7 +80,7 @@ AIRPORT_NAMES = {
     "KUL": {"MN": "Куала Лумпур", "EN": "Kuala Lumpur"},
     "SGN": {"MN": "Хо Ши Мин", "EN": "Ho Chi Minh City"},
     "HAN": {"MN": "Ханой", "EN": "Hanoi"},
-    "DAD": {"MN": "Да Нанг", "EN": "Da Nang"},
+    "DAD": {"MN": "Да Nang", "EN": "Da Nang"},
     "PQC": {"MN": "Фү Куок", "EN": "Phu Quoc"},
     "MNL": {"MN": "Манила", "EN": "Manila"},
     "CEB": {"MN": "Себу", "EN": "Cebu"},
@@ -302,8 +302,6 @@ def parse_pnl(text):
         if route_match:
             route = f"{route_match.group(1).upper()}-{route_match.group(2).upper()}"
 
-    # Зорчигчийн мөр уншихRegex шинэчлэлт:
-    # Жишээ: 206N 01BAZARGUR/YESUGEN DKDQI4 G HK 21SEP ULN3M3115
     passenger_pattern = re.compile(
         r"^\s*(\d{1,3})[A-Z]?\s+(?:\*\d{1,2}|\d{1,2})?\s*(.+?)\s+([A-Z0-9]{5,8})(?:\s+([A-Z]))?\s+([A-Z]{2})\s+(\d{2}[A-Z]{3})\s*([A-Z0-9]+)?",
         re.IGNORECASE
@@ -510,9 +508,17 @@ def clear_all_data():
     st.session_state.records = []
     st.session_state.missing_records = []
     st.session_state.pnl_text = ""
+    st.session_state.pnl_textarea = ""
     st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
     st.session_state.edit_mode = False
-    st.session_state.pnl_textarea = ""
+
+    # Нислэгийн мэдээллийн талбаруудыг цэвэрлэх
+    st.session_state.input_flt_no = ""
+    st.session_state.input_flt_date = ""
+    st.session_state.input_route = ""
+    st.session_state.input_dep_time = ""
+    st.session_state.input_arr_time = ""
+    st.session_state.input_reason = ""
 
 # ============================================================
 # STREAMLIT UI
@@ -521,6 +527,7 @@ def clear_all_data():
 st.set_page_config(page_title="MIAT Flight Notification System", layout="wide")
 st.title("✈️ MIAT Flight Notification System (Web)")
 
+# Session state-үүдийг анхны утгаар тохируулах
 if "records" not in st.session_state:
     st.session_state.records = []
 if "missing_records" not in st.session_state:
@@ -533,6 +540,19 @@ if "custom_templates" not in st.session_state:
     st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = False
+
+if "input_flt_no" not in st.session_state:
+    st.session_state.input_flt_no = ""
+if "input_flt_date" not in st.session_state:
+    st.session_state.input_flt_date = ""
+if "input_route" not in st.session_state:
+    st.session_state.input_route = ""
+if "input_dep_time" not in st.session_state:
+    st.session_state.input_dep_time = ""
+if "input_arr_time" not in st.session_state:
+    st.session_state.input_arr_time = ""
+if "input_reason" not in st.session_state:
+    st.session_state.input_reason = ""
 
 # --- SIDEBAR: AUTHENTICATION ---
 with st.sidebar:
@@ -553,7 +573,15 @@ with col1:
         if pnl_input.strip():
             st.session_state.pnl_text = pnl_input
             st.session_state.records, st.session_state.missing_records = parse_pnl(pnl_input)
+            
+            # PNL-ээс уншсан мэдээллийг талбаруудад автоматаар тохируулах
+            first_pax = st.session_state.records[0] if st.session_state.records else (st.session_state.missing_records[0] if st.session_state.missing_records else {})
+            st.session_state.input_flt_no = first_pax.get("Flight", "")
+            st.session_state.input_flt_date = first_pax.get("Date", "")
+            st.session_state.input_route = first_pax.get("Route", "")
+            
             st.success("PNL амжилттай уншигдлаа!")
+            st.rerun()
         else:
             st.warning("PNL текстээ оруулна уу.")
             
@@ -562,22 +590,20 @@ with col1:
 with col2:
     st.subheader("2. Нислэгийн Мэдээлэл")
     
-    first_pax = st.session_state.records[0] if st.session_state.records else (st.session_state.missing_records[0] if st.session_state.missing_records else {})
-    
     status_type = st.radio("Мэдэгдлийн төрөл:", ["CHANGE", "CANCEL"], format_func=lambda x: "Schedule Change (Өөрчлөгдсөн)" if x == "CHANGE" else "Flight Cancelled (Цуцлагдсан)", horizontal=True)
     
     c1, c2, c3 = st.columns(3)
-    flt_no = c1.text_input("Flight No:", value=first_pax.get("Flight", ""))
-    flt_date = c2.text_input("Date:", value=first_pax.get("Date", ""))
-    route = c3.text_input("Route:", value=first_pax.get("Route", ""))
+    flt_no = c1.text_input("Flight No:", key="input_flt_no")
+    flt_date = c2.text_input("Date:", key="input_flt_date")
+    route = c3.text_input("Route:", key="input_route")
     
     c4, c5 = st.columns(2)
-    dep_time = c4.text_input("Dep Time:", placeholder="10:00")
-    arr_time = c5.text_input("Arr Time:", placeholder="14:30")
+    dep_time = c4.text_input("Dep Time:", placeholder="10:00", key="input_dep_time")
+    arr_time = c5.text_input("Arr Time:", placeholder="14:30", key="input_arr_time")
     
     reason = ""
     if status_type == "CANCEL":
-        reason = st.text_input("Reason (Шалтгаан):", placeholder="Техникийн саатал...")
+        reason = st.text_input("Reason (Шалтгаан):", placeholder="Техникийн саатал...", key="input_reason")
 
     na_action = st.radio("N/A Хэлтэй зорчигчийг авах хэл:", ["MN", "EN", "SKIP"], horizontal=True)
 
