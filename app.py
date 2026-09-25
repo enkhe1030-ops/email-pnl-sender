@@ -372,7 +372,6 @@ def parse_pnl(text):
         status = pax["Status Code"]
         missing_reasons = []
 
-        # TKT дугааргүй, UC, UN, HL, TL статус, имэйлгүй тохиолдолд дутуу мэдээлэлд тооцно
         if pax["TicketNo"] == "-":
             missing_reasons.append("TKT дугааргүй")
 
@@ -417,7 +416,6 @@ def parse_pnl(text):
 # ============================================================
 
 def generate_email_text_base(target_lang, flight_info):
-    """ Энгийн текст (Plain text) хэлбэрийн загвар """
     pax_name = "{PAX_NAME}"
     pnr_code = "{PNR}"
     tkt_no = "{TICKET_NO}"
@@ -465,7 +463,6 @@ def generate_email_text_base(target_lang, flight_info):
     return subject, body
 
 def text_to_html(plain_text):
-    """ Энгийн текстийг HTML хэлбэрт хөрвүүлнэ """
     formatted = plain_text.replace('\n', '<br>')
     formatted = re.sub(r'(\b[A-Z-0-9А-ЯӨҮөү\s]+:)', r'<b>\1</b>', formatted)
     return f'<div style="font-family: Calibri, sans-serif; font-size: 11pt; line-height: 1.5;">{formatted}</div>'
@@ -498,6 +495,18 @@ def send_email_smtp(sender_email, app_password, recipient_email, subject, plain_
         server.send_message(msg)
 
 # ============================================================
+# CLEAR ALL CALLBACK FUNCTION (Алдаанаас сэргийлэх шийдэл)
+# ============================================================
+
+def clear_all_data():
+    st.session_state.records = []
+    st.session_state.missing_records = []
+    st.session_state.pnl_text = ""
+    st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
+    st.session_state.edit_mode = False
+    st.session_state.pnl_textarea = ""
+
+# ============================================================
 # STREAMLIT UI
 # ============================================================
 
@@ -510,6 +519,8 @@ if "missing_records" not in st.session_state:
     st.session_state.missing_records = []
 if "pnl_text" not in st.session_state:
     st.session_state.pnl_text = ""
+if "pnl_textarea" not in st.session_state:
+    st.session_state.pnl_textarea = ""
 if "custom_templates" not in st.session_state:
     st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
 if "edit_mode" not in st.session_state:
@@ -527,7 +538,7 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     st.subheader("1. Amadeus Passenger Name List (PNL)")
-    pnl_input = st.text_area("PNL Эх текст хуулах:", value=st.session_state.pnl_text, height=250, key="pnl_textarea")
+    pnl_input = st.text_area("PNL Эх текст хуулах:", height=250, key="pnl_textarea")
 
     col_btn1, col_btn2 = st.columns([1, 1])
     if col_btn1.button("Extract PNL", type="primary"):
@@ -538,15 +549,7 @@ with col1:
         else:
             st.warning("PNL текстээ оруулна уу.")
             
-    if col_btn2.button("Clear All"):
-        st.session_state.records = []
-        st.session_state.missing_records = []
-        st.session_state.pnl_text = ""
-        st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
-        st.session_state.edit_mode = False
-        if "pnl_textarea" in st.session_state:
-            st.session_state.pnl_textarea = ""
-        st.rerun()
+    col_btn2.button("Clear All", on_click=clear_all_data)
 
 with col2:
     st.subheader("2. Нислэгийн Мэдээлэл")
