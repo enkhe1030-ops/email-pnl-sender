@@ -18,15 +18,15 @@ AIRPORT_NAMES = {
     "ULN": {"MN": "Улаанбаатар (Буянт-Ухаа)", "EN": "Ulaanbaatar (Old)"},
     "HVD": {"MN": "Ховд", "EN": "Khovd"},
     "ULG": {"MN": "Өлгий", "EN": "Olgii"},
-    "ULO": {"MN": "Улаангом", "EN": "Ulaangom"},
+    "UGA": {"MN": "Улаангом", "EN": "Ulaangom"},
     "UNR": {"MN": "Өндөрхаан (Чингис город)", "EN": "Undurkhaan"},
     "DLZ": {"MN": "Даланзадгад", "EN": "Dalanzadgad"},
     "LTI": {"MN": "Алтай", "EN": "Altai"},
-    "MXV": {"MN": "Мөрөн", "EN": "Moron"},
-    "ULZ": {"MN": "Улиастай (Донной)", "EN": "Uliastai"},
+    "MWR": {"MN": "Мөрөн", "EN": "Moron"},
+    "UZZ": {"MN": "Улиастай (Донной)", "EN": "Uliastai"},
     "COQ": {"MN": "Чойбалсан", "EN": "Choibalsan"},
     "BYN": {"MN": "Баянхонгор", "EN": "Bayankhongor"},
-    "KHB": {"MN": "Алтат (Оюут толгой)", "EN": "Khanbumbat / Oyu Tolgoi"},
+    "EAV": {"MN": "Алтат (Оюут толгой)", "EN": "Khanbumbat / Oyu Tolgoi"},
     "THN": {"MN": "Таван толгой", "EN": "Tavan Tolgoi"},
     "TST": {"MN": "Цагаан суварга", "EN": "Tsagaan Suvarga"},
     "PST": {"MN": "Баян-Өндөр (Орхон)", "EN": "Erdenet"},
@@ -220,8 +220,7 @@ def get_route_text(route_str, lang="MN"):
 
 def format_date_custom(raw_date_str):
     if not raw_date_str:
-        now = datetime.now(ZoneInfo("Asia/Ulaanbaatar"))
-        return now.strftime("%Y.%m.%d"), now.strftime("%Y-%m-%d"), now.strftime("%B %d, %Y")
+        return "", "", ""
 
     months = {
         "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
@@ -426,41 +425,41 @@ def generate_email_text_base(target_lang, flight_info):
     pnr_code = "{PNR}"
     tkt_no = "{TICKET_NO}"
 
-    flt_no = flight_info['flight'] or "OM137"
-    flt_date = flight_info['date'] or "08NOV30"
-    raw_route = flight_info['route'] or "UBN-FRA"
+    flt_no = flight_info['flight'] if flight_info['flight'] else ""
+    flt_date = flight_info['date'] if flight_info['date'] else ""
+    raw_route = flight_info['route'] if flight_info['route'] else ""
     dep_time = flight_info['dep_time']
     arr_time = flight_info['arr_time']
     reason = flight_info['reason']
     status_type = flight_info['status_type']
 
-    mn_dot_date, mn_dash_date, en_date = format_date_custom(flt_date)
-    city_title, full_route_display = get_route_text(raw_route, lang=target_lang)
+    mn_dot_date, mn_dash_date, en_date = format_date_custom(flt_date) if flt_date else ("", "", "")
+    city_title, full_route_display = get_route_text(raw_route, lang=target_lang) if raw_route else ("", "")
 
     if target_lang == "MN":
         if status_type == "CANCEL":
-            subject = f"{mn_dot_date} –ний {city_title} {flt_no} нислэг цуцлагдсан тухай мэдэгдэл"
+            subject = f"{mn_dot_date} –ний {city_title} {flt_no} нислэг цуцлагдсан тухай мэдэгдэл".strip()
             body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэг цуцлагдсан болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nЦУЦЛАГДСАН НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}"
             if dep_time: body += f"\n• Нисэх цаг: {dep_time}"
             if arr_time: body += f"\n• Буух цаг: {arr_time}"
             if reason: body += f"\n• Шалтгаан: {reason}"
             body += "\n\nТийз буцаалт болон өөр өдрийн нислэгээр тийзээ өөрчилж баталгаажуулах талаар тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.\n\nДээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.\n\nХүндэтгэсэн,\nМИАТ ТӨХК"
         else:
-            subject = f"{mn_dot_date} –ний {city_title} {flt_no} нислэгийн хуваарийн өөрчлөлтийн тухай мэдэгдэл"
+            subject = f"{mn_dot_date} –ний {city_title} {flt_no} нислэгийн хуваарийн өөрчлөлтийн тухай мэдэгдэл".strip()
             body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэгийн цагийн хуваарьт өөрчлөлт орсон болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nШИНЭ НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}"
             if dep_time: body += f"\n• Нисэх цаг: {dep_time}"
             if arr_time: body += f"\n• Буух цаг: {arr_time}"
             body += "\n\nТаны тийзийн төлөв байдал болон шинэ нислэгийн мэдээллийг баталгаажуулахын тулд тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.\n\nДээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.\n\nХүндэтгэсэн,\nМИАТ ТӨХК"
     else: # EN
         if status_type == "CANCEL":
-            subject = f"Flight Cancellation Notification - {flt_no} ({city_title}) - {en_date}"
+            subject = f"Flight Cancellation Notification - {flt_no} ({city_title}) - {en_date}".strip()
             body = f"Dear {pax_name},\n\nWe regret to inform you that your flight {flt_no} {full_route_display}, scheduled for {en_date}, has been cancelled.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nCANCELLED FLIGHT DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}\n- Route: {raw_route}"
             if dep_time: body += f"\n- Departure Time: {dep_time}"
             if arr_time: body += f"\n- Arrival Time: {arr_time}"
             if reason: body += f"\n- Reason: {reason}"
             body += "\n\nFor ticket refund or to change and confirm your ticket for a flight on another date, please contact your travel agent or ticket issuing office as soon as possible.\n\nBest regards,\nMIAT Mongolian Airlines"
         else:
-            subject = f"Flight Schedule Change Notification - {flt_no} ({city_title}) – {en_date}"
+            subject = f"Flight Schedule Change Notification - {flt_no} ({city_title}) – {en_date}".strip()
             body = f"Dear {pax_name},\n\nWe regret to inform you of a schedule change for your flight {flt_no} {full_route_display} on {en_date}.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nNEW FLIGHT SCHEDULE DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}\n- Route: {raw_route}"
             if dep_time: body += f"\n- Departure Time: {dep_time}"
             if arr_time: body += f"\n- Arrival Time: {arr_time}"
@@ -512,7 +511,7 @@ def clear_all_data():
     st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
     st.session_state.edit_mode = False
 
-    # Нислэгийн мэдээллийн талбаруудыг цэвэрлэх
+    # Нислэгийн мэдээллийн бүх талбарыг арилгах
     st.session_state.input_flt_no = ""
     st.session_state.input_flt_date = ""
     st.session_state.input_route = ""
