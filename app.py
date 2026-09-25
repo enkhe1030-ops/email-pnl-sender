@@ -362,7 +362,8 @@ def parse_pnl(text):
     formatted_records, missing_data_records = [], []
     valid_idx, missing_idx = 1, 1
 
-    valid_statuses = ["HK", "TK", "SA", "RR"]
+    # UN статусыг идэвхтэй статусуудын жагсаалтад нэмэв
+    valid_statuses = ["HK", "TK", "SA", "RR", "UN"]
 
     for pax in raw_passengers:
         emails_list = list(pax["emails_dict"].keys())
@@ -375,9 +376,9 @@ def parse_pnl(text):
         missing_reasons = []
 
         if pax["TicketNo"] == "-":
-            missing_reasons.append("TKT дугааргүй")
+            missing_reasons.append("ТК Т дугааргүй")
 
-        # STATUS-ИЙН ЛОГИК: UC ХАРУУЛАХ ТУСГАЙ НӨХЦӨЛ
+        # STATUS-ИЙН ЛОГИК: UC статусыг "Мэдээлэл дутуу" хэсэгт тусгайлан заана
         if status == "UC":
             missing_reasons.append("Статус UC")
         elif status not in valid_statuses:
