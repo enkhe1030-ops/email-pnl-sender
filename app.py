@@ -11,6 +11,9 @@ import streamlit as st
 # ============================================================
 
 AIRPORT_NAMES = {
+    # ==========================================
+    # 1. МОНГОЛ УЛС (Орон нутаг & Олон улс)
+    # ==========================================
     "UBN": {"MN": "Улаанбаатар", "EN": "Ulaanbaatar"},
     "ULN": {"MN": "Улаанбаатар (Буянт-Ухаа)", "EN": "Ulaanbaatar (Old)"},
     "HVD": {"MN": "Ховд", "EN": "Khovd"},
@@ -28,12 +31,17 @@ AIRPORT_NAMES = {
     "TST": {"MN": "Цагаан суварга", "EN": "Tsagaan Suvarga"},
     "PST": {"MN": "Баян-Өндөр (Орхон)", "EN": "Erdenet"},
     "TXN": {"MN": "Ташаанта", "EN": "Tashaanta"},
+
+    # ==========================================
+    # 2. ЗҮҮН АЗИ (East Asia)
+    # ==========================================
     "ICN": {"MN": "Сөүл (Инчон)", "EN": "Seoul (Incheon)"},
     "GMP": {"MN": "Сөүл (Кимпо)", "EN": "Seoul (Gimpo)"},
     "PUS": {"MN": "Пусан", "EN": "Busan"},
     "CJU": {"MN": "Чежу", "EN": "Jeju"},
     "TAE": {"MN": "Тэгү", "EN": "Daegu"},
     "CJJ": {"MN": "Чонжу", "EN": "Cheongju"},
+
     "NRT": {"MN": "Токио (Нарита)", "EN": "Tokyo (Narita)"},
     "HND": {"MN": "Токио (Ханеда)", "EN": "Tokyo (Haneda)"},
     "KIX": {"MN": "Осака (Кансай)", "EN": "Osaka (Kansai)"},
@@ -42,6 +50,7 @@ AIRPORT_NAMES = {
     "CTS": {"MN": "Саппоро", "EN": "Sapporo"},
     "FUK": {"MN": "Фукуока", "EN": "Fukuoka"},
     "OKA": {"MN": "Окинава", "EN": "Okinawa"},
+
     "PEK": {"MN": "Бээжин (Капитал)", "EN": "Beijing (Capital)"},
     "PKX": {"MN": "Бээжин (Дашин)", "EN": "Beijing (Daxing)"},
     "PVG": {"MN": "Шанхай (Пудон)", "EN": "Shanghai (Pudong)"},
@@ -60,9 +69,129 @@ AIRPORT_NAMES = {
     "HKG": {"MN": "Хонконг", "EN": "Hong Kong"},
     "MFM": {"MN": "Макао", "EN": "Macau"},
     "TPE": {"MN": "Тайбэй (Таоюань)", "EN": "Taipei (Taoyuan)"},
+
+    # ==========================================
+    # 3. ЗҮҮН ӨМНӨД АЗИ (Southeast Asia)
+    # ==========================================
+    "BKK": {"MN": "Бангкок (Суварнабхуми)", "EN": "Bangkok (Suvarnabhumi)"},
+    "DMK": {"MN": "Бангкок (Дон Мыанг)", "EN": "Bangkok (Don Mueang)"},
+    "HKT": {"MN": "Пүкэт", "EN": "Phuket"},
+    "SIN": {"MN": "Сингапур (Чанги)", "EN": "Singapore (Changi)"},
+    "KUL": {"MN": "Куала Лумпур", "EN": "Kuala Lumpur"},
+    "SGN": {"MN": "Хо Ши Мин", "EN": "Ho Chi Minh City"},
+    "HAN": {"MN": "Ханой", "EN": "Hanoi"},
+    "DAD": {"MN": "Да Нанг", "EN": "Da Nang"},
+    "PQC": {"MN": "Фү Куок", "EN": "Phu Quoc"},
+    "MNL": {"MN": "Манила", "EN": "Manila"},
+    "CEB": {"MN": "Себу", "EN": "Cebu"},
+    "CGK": {"MN": "Жакарта", "EN": "Jakarta"},
+    "DPS": {"MN": "Бали (Денпасар)", "EN": "Bali (Denpasar)"},
+
+    # ==========================================
+    # 4. ЭНЭТХЭГ & ТӨВ АЗИ (South & Central Asia)
+    # ==========================================
+    "DEL": {"MN": "Нью Дели", "EN": "New Delhi"},
+    "BOM": {"MN": "Мумбай", "EN": "Mumbai"},
+    "ALA": {"MN": "Алматы", "EN": "Almaty"},
+    "NQZ": {"MN": "Астана", "EN": "Astana"},
+    "TAS": {"MN": "Ташкент", "EN": "Tashkent"},
+    "FRU": {"MN": "Бишкек", "EN": "Bishkek"},
+
+    # ==========================================
+    # 5. ОЙРХИ ДОРНОД (Middle East)
+    # ==========================================
+    "DXB": {"MN": "Дубай", "EN": "Dubai"},
+    "DWC": {"MN": "Дубай (Аль-Мактум)", "EN": "Dubai (Al Maktoum)"},
+    "AUH": {"MN": "Абу Даби", "EN": "Abu Dhabi"},
+    "DOH": {"MN": "Доха", "EN": "Doha"},
+    "IST": {"MN": "Истанбул", "EN": "Istanbul"},
+    "SAW": {"MN": "Истанбул (Сабиха Гөкчен)", "EN": "Istanbul (Sabiha Gokcen)"},
+    "AYT": {"MN": "Анталья", "EN": "Antalya"},
+    "MCT": {"MN": "Маскат", "EN": "Muscat"},
+    "RUH": {"MN": "Эр-Рияд", "EN": "Riyadh"},
+
+    # ==========================================
+    # 6. ОРОСЫН ХОЛБООНЫ УЛС (Russia)
+    # ==========================================
+    "SVO": {"MN": "Москва (Шереметьево)", "EN": "Moscow (Sheremetyevo)"},
+    "DME": {"MN": "Москва (Домодедово)", "EN": "Moscow (Domodedovo)"},
+    "VKO": {"MN": "Москва (Внуково)", "EN": "Moscow (Vnukovo)"},
+    "LED": {"MN": "Санкт-Петербург", "EN": "St. Petersburg"},
+    "IKT": {"MN": "Иркутск", "EN": "Irkutsk"},
+    "UUD": {"MN": "Улаан-Үд", "EN": "Ulan-Ude"},
+    "VVO": {"MN": "Владивосток", "EN": "Vladivostok"},
+    "OVB": {"MN": "Новосибирск", "EN": "Novosibirsk"},
+    "KJA": {"MN": "Красноярск", "EN": "Krasnoyarsk"},
+    "KGD": {"MN": "Калининград", "EN": "Kaliningrad"},
+
+    # ==========================================
+    # 7. ЕВРОП & ИРЛАНД (Europe & Ireland)
+    # ==========================================
+    "LHR": {"MN": "Лондон (Хитроу)", "EN": "London (Heathrow)"},
+    "LGW": {"MN": "Лондон (Гатвик)", "EN": "London (Gatwick)"},
+    "STN": {"MN": "Лондон (Станстед)", "EN": "London (Stansted)"},
+    "LTN": {"MN": "Лондон (Лутон)", "EN": "London (Luton)"},
+    "MAN": {"MN": "Манчестер", "EN": "Manchester"},
+    "BHX": {"MN": "Бирмингем", "EN": "Birmingham"},
+    "EDI": {"MN": "Эдинбург", "EN": "Edinburgh"},
+    "DUB": {"MN": "Дублин", "EN": "Dublin"},
+    "ORK": {"MN": "Корг", "EN": "Cork"},
+    "SNN": {"MN": "Шэннон", "EN": "Shannon"},
+
+    "GOT": {"MN": "Гётеборг", "EN": "Gothenburg"},
+    "ARN": {"MN": "Стокгольм", "EN": "Stockholm"},
+    "CPH": {"MN": "Копенгаген", "EN": "Copenhagen"},
+    "OSL": {"MN": "Осло", "EN": "Oslo"},
+    "HEL": {"MN": "Хельсинки", "EN": "Helsinki"},
+
     "FRA": {"MN": "Франкфурт", "EN": "Frankfurt"},
     "MUC": {"MN": "Мюнхен", "EN": "Munich"},
-    "BER": {"MN": "Бэрлин", "EN": "Berlin"},
+    "BER": {"MN": "Берлин", "EN": "Berlin"},
+    "CDG": {"MN": "Парис (Шарль де Голль)", "EN": "Paris (Charles de Gaulle)"},
+    "ORY": {"MN": "Парис (Орли)", "EN": "Paris (Orly)"},
+    "AMS": {"MN": "Амстердам", "EN": "Amsterdam"},
+    "ZRH": {"MN": "Цюрих", "EN": "Zurich"},
+    "VIE": {"MN": "Вена", "EN": "Vienna"},
+    "PRG": {"MN": "Прага", "EN": "Prague"},
+    "FCO": {"MN": "Ром", "EN": "Rome"},
+    "MXP": {"MN": "Милан (Мальпенса)", "EN": "Milan (Malpensa)"},
+    "MAD": {"MN": "Мадрид", "EN": "Madrid"},
+    "BCN": {"MN": "Барселона", "EN": "Barcelona"},
+    "ATH": {"MN": "Афин", "EN": "Athens"},
+    "WAW": {"MN": "Варшав", "EN": "Warsaw"},
+    "BUD": {"MN": "Будапешт", "EN": "Budapest"},
+
+    # ==========================================
+    # 8. ХОЁР БҮЛДИЙН АМЕРИК (North & South America)
+    # ==========================================
+    "JFK": {"MN": "Нью-Йорк (JFK)", "EN": "New York (JFK)"},
+    "EWR": {"MN": "Нью-Йорк (Ньюарк)", "EN": "New York (Newark)"},
+    "LAX": {"MN": "Лос-Анжелес", "EN": "Los Angeles"},
+    "SFO": {"MN": "Сан Франциско", "EN": "San Francisco"},
+    "ORD": {"MN": "Чикаго (О'Хара)", "EN": "Chicago (O'Hare)"},
+    "SEA": {"MN": "Сиэтл", "EN": "Seattle"},
+    "MIA": {"MN": "Майами", "EN": "Miami"},
+    "IAD": {"MN": "Вашингтон (Даллес)", "EN": "Washington (Dulles)"},
+    "YVR": {"MN": "Ванкувер", "EN": "Vancouver"},
+    "YYZ": {"MN": "Торонто", "EN": "Toronto"},
+    "GRU": {"MN": "Сан Пауло", "EN": "Sao Paulo"},
+    "EZE": {"MN": "Буэнос-Айрес", "EN": "Buenos Aires"},
+
+    # ==========================================
+    # 9. АВСТРАЛИ & ДАЛАЙН ОРОН (Australia & Pacific)
+    # ==========================================
+    "SYD": {"MN": "Сидней", "EN": "Sydney"},
+    "MEL": {"MN": "Мельбурн", "EN": "Melbourne"},
+    "BNE": {"MN": "Брисбен", "EN": "Brisbane"},
+    "PER": {"MN": "Перт", "EN": "Perth"},
+    "AKL": {"MN": "Окленд", "EN": "Auckland"},
+
+    # ==========================================
+    # 10. АФРИК (Africa)
+    # ==========================================
+    "CAI": {"MN": "Каир", "EN": "Cairo"},
+    "JNB": {"MN": "Йоханнесбург", "EN": "Johannesburg"},
+    "CPT": {"MN": "Кейптаун", "EN": "Cape Town"},
 }
 
 # ============================================================
@@ -70,6 +199,7 @@ AIRPORT_NAMES = {
 # ============================================================
 
 def get_ubn_now():
+    """ Улаанбаатарын одоогийн цагийг авах (UTC+8) """
     return datetime.now(ZoneInfo("Asia/Ulaanbaatar")).strftime("%Y-%m-%d %H:%M:%S")
 
 def get_route_text(route_str, lang="MN"):
@@ -150,7 +280,7 @@ def is_valid_email(email):
     return bool(re.match(email_regex, email))
 
 # ============================================================
-# PARSE AMADEUS PNL (221/221 ЗОРЧИГЧИЙГ 100% УНШИХ)
+# PARSE AMADEUS PNL
 # ============================================================
 
 def parse_pnl(text):
@@ -172,9 +302,8 @@ def parse_pnl(text):
         if route_match:
             route = f"{route_match.group(1).upper()}-{route_match.group(2).upper()}"
 
-    # 221 зорчигчийг алдалгүй унших шинэчилсэн Regex
     passenger_pattern = re.compile(
-        r"^\s*(\d{3})\s+(?:\*[A-Z0-9]{2,4}\s+|\d{2}\s+)?(.+?)\s+([A-Z0-9]{5,8})(?:\s+([A-Z]{2})\s*(\d{2}[A-Z]{3})?)?", 
+        r"^\s*(\d{3})\s+(?:\d{2})?(.+?)\s+([A-Z0-9]{5,8})(?:\s+([A-Z]{2})\s*(\d{2}[A-Z]{3})?)?", 
         re.IGNORECASE
     )
     ticket_pattern = re.compile(r"FA\s+PAX\s+(\d{3}-\d{9,10})", re.IGNORECASE)
@@ -233,8 +362,6 @@ def parse_pnl(text):
     formatted_records, missing_data_records = [], []
     valid_idx, missing_idx = 1, 1
 
-    valid_statuses = ["HK", "TK", "SA", "RR"]
-
     for pax in raw_passengers:
         emails_list = list(pax["emails_dict"].keys())
         langs_list = list(pax["emails_dict"].values())
@@ -246,17 +373,17 @@ def parse_pnl(text):
         missing_reasons = []
 
         if pax["TicketNo"] == "-":
-            missing_reasons.append("ТKT дугааргүй")
+            missing_reasons.append("TKT дугааргүй")
 
-        if status not in valid_statuses:
-            missing_reasons.append(f"{status if status else 'Нэг ч'} статусгүй/буруу статус")
+        if status in ["UC", "UN", "HL", "TL"]:
+            missing_reasons.append(f"{status} статус")
         
         if not joined_emails:
             missing_reasons.append("Имэйл хаяггүй")
 
         record = {
             "Selected": True,
-            "SeqNo": "",
+            "SeqNo": str(valid_idx) if not missing_reasons else "",
             "PNLNo": pax["PNLNo"],
             "Passenger Name": pax["Passenger Name"],
             "PNR": pax["PNR"],
@@ -279,14 +406,13 @@ def parse_pnl(text):
             missing_data_records.append(record)
             missing_idx += 1
         else:
-            record["SeqNo"] = str(valid_idx)
             formatted_records.append(record)
             valid_idx += 1
 
     return formatted_records, missing_data_records
 
 # ============================================================
-# TEMPLATE GENERATOR & SMTP & CLEAR DATA
+# TEMPLATE GENERATOR
 # ============================================================
 
 def generate_email_text_base(target_lang, flight_info):
@@ -294,9 +420,9 @@ def generate_email_text_base(target_lang, flight_info):
     pnr_code = "{PNR}"
     tkt_no = "{TICKET_NO}"
 
-    flt_no = flight_info['flight'] or "OM301"
-    flt_date = flight_info['date'] or "10OCT"
-    raw_route = flight_info['route'] or "UBN-ICN"
+    flt_no = flight_info['flight'] or "OM137"
+    flt_date = flight_info['date'] or "08NOV30"
+    raw_route = flight_info['route'] or "UBN-FRA"
     dep_time = flight_info['dep_time']
     arr_time = flight_info['arr_time']
     reason = flight_info['reason']
@@ -319,7 +445,7 @@ def generate_email_text_base(target_lang, flight_info):
             if dep_time: body += f"\n• Нисэх цаг: {dep_time}"
             if arr_time: body += f"\n• Буух цаг: {arr_time}"
             body += "\n\nТаны тийзийн төлөв байдал болон шинэ нислэгийн мэдээллийг баталгаажуулахын тулд тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.\n\nДээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.\n\nХүндэтгэсэн,\nМИАТ ТӨХК"
-    else:
+    else: # EN
         if status_type == "CANCEL":
             subject = f"Flight Cancellation Notification - {flt_no} ({city_title}) - {en_date}"
             body = f"Dear {pax_name},\n\nWe regret to inform you that your flight {flt_no} {full_route_display}, scheduled for {en_date}, has been cancelled.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nCANCELLED FLIGHT DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}\n- Route: {raw_route}"
@@ -351,6 +477,10 @@ def render_custom_template(template_text, record):
     rendered = rendered.replace("{TICKET_NO}", tkt_no)
     return rendered
 
+# ============================================================
+# SMTP SENDER
+# ============================================================
+
 def send_email_smtp(sender_email, app_password, recipient_email, subject, plain_text, html_text):
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -363,6 +493,10 @@ def send_email_smtp(sender_email, app_password, recipient_email, subject, plain_
         server.starttls()
         server.login(sender_email, app_password)
         server.send_message(msg)
+
+# ============================================================
+# CLEAR ALL CALLBACK FUNCTION (Алдаанаас сэргийлэх шийдэл)
+# ============================================================
 
 def clear_all_data():
     st.session_state.records = []
@@ -397,7 +531,7 @@ with st.sidebar:
     st.header("🔑 Илгээгчийн Тохиргоо")
     st.info("Таны нууц үг системд хадгалагдахгүй бөгөөд зөвхөн одоогийн сесс дээр ашиглагдана.")
     sender_email = st.text_input("Gmail Хаяг", placeholder="example@gmail.com")
-    app_password = st.text_input("Gmail App Password", type="password")
+    app_password = st.text_input("Gmail App Password", type="password", help="Google Account -> Security -> App Passwords хэсгээс үүсгэнэ.")
 
 # --- MAIN LAYOUT ---
 col1, col2 = st.columns([1, 1])
@@ -454,30 +588,6 @@ st.divider()
 # --- PASSENGER TABLES & PREVIEW ---
 tab1, tab2, tab3 = st.tabs(["📋 Идэвхтэй Зорчигчид", "⚠️ Мэдээлэл Дутуу Зорчигчид", "👁️ Email Preview"])
 
-active_count = len(st.session_state.records)
-missing_count = len(st.session_state.missing_records)
-total_pax = active_count + missing_count
-
-# Хэлний тоолол
-all_records = st.session_state.records + st.session_state.missing_records
-mn_cnt = sum(1 for r in all_records if r.get("Language") == "MN")
-en_cnt = sum(1 for r in all_records if r.get("Language") == "EN")
-na_cnt = sum(1 for r in all_records if r.get("Language") == "N/A")
-
-mn_pct = (mn_cnt / total_pax * 100) if total_pax > 0 else 0
-en_pct = (en_cnt / total_pax * 100) if total_pax > 0 else 0
-na_pct = (na_cnt / total_pax * 100) if total_pax > 0 else 0
-
-# Мэдээллийн нэгдсэн хэлхээ (Статистик)
-info_msg = (
-    f"📋 **Идэвхтэй Зорчигчид:** {active_count} | "
-    f"⚠️ **Мэдээлэл Дутуу Зорчигчид:** {missing_count} | "
-    f"👥 **Нийт Зорчигчид:** {total_pax} | "
-    f"🇲🇳 **MN:** {mn_cnt} ({mn_pct:.1f}%) | "
-    f"🇬🇧 **EN:** {en_cnt} ({en_pct:.1f}%) | "
-    f"❓ **N/A:** {na_cnt} ({na_pct:.1f}%)"
-)
-
 with tab1:
     if st.session_state.records:
         col_s1, col_s2, col_s3 = st.columns([1, 1, 3])
@@ -508,7 +618,16 @@ with tab1:
         for idx, row in edited_df.iterrows():
             st.session_state.records[idx]["Selected"] = row["Selected"]
 
-        st.info(info_msg)
+        mn_cnt = sum(1 for r in st.session_state.records if r["Language"] == "MN" and r["Selected"])
+        en_cnt = sum(1 for r in st.session_state.records if r["Language"] == "EN" and r["Selected"])
+        na_cnt = sum(1 for r in st.session_state.records if r["Language"] == "N/A" and r["Selected"])
+        
+        no_tkt_cnt = sum(1 for r in st.session_state.missing_records if "TKT дугааргүй" in r["MissingReason"])
+        no_email_cnt = sum(1 for r in st.session_state.missing_records if "Имэйл хаяггүй" in r["MissingReason"])
+        
+        total_pax = len(st.session_state.records) + len(st.session_state.missing_records)
+        
+        st.write(f"**Мэдээлэл:** 🔵 MN: {mn_cnt} | 🟢 EN: {en_cnt} | 🔴 N/A: {na_cnt} | 🎟️ TKT-гүй: {no_tkt_cnt} | 📧 Имэйлгүй: {no_email_cnt} | 👥 **Нийт зорчигчид:** {total_pax}")
     else:
         st.info("Одоогоор уншигдсан идэвхтэй зорчигч байхгүй байна.")
 
@@ -517,7 +636,6 @@ with tab2:
         df_missing = pd.DataFrame(st.session_state.missing_records)
         cols_missing = ["SeqNo", "PNLNo", "Passenger Name", "PNR", "StatusCode", "BookingDate", "TicketNo", "Email", "MissingReason"]
         st.dataframe(df_missing[cols_missing], hide_index=True, use_container_width=True)
-        st.warning(info_msg)
     else:
         st.info("Дутуу мэдээлэлтэй зорчигч байхгүй байна.")
 
