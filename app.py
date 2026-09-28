@@ -678,7 +678,7 @@ mn_cnt = sum(1 for r in selected_passengers if r["Language"] == "MN")
 en_cnt = sum(1 for r in selected_passengers if r["Language"] == "EN")
 na_cnt = sum(1 for r in selected_passengers if r["Language"] == "N/A")
 
-st.write(f"**Мэдээлэл:** 🔵 MN: {mn_cnt} | 🟢 EN: {en_cnt} | 🔴 N/A: {na_cnt} | 🎯 Сонгогдсон: {selected_cnt}/{active_cnt} | ⚠️ Мэдээлэл Дутуу: {missing_cnt} | 👥 **Нийт зорчигчид:** {total_pax}")
+st.write(f"**Мэдээлэл:** 🔵 MN: {mn_cnt} | 🟢 EN: {en_cnt} | 🔴 N/A: {na_cnt} | 🎯 Идэвхтэй: {selected_cnt}/{active_cnt} | ⚠️ Мэдээлэл Дутуу: {missing_cnt} | 👥 **Нийт зорчигчид:** {total_pax}")
 
 with tab3:
     if selected_cnt == 0:
