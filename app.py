@@ -362,7 +362,6 @@ def parse_pnl(text):
     formatted_records, missing_data_records = [], []
     valid_idx, missing_idx = 1, 1
 
-    # UN статусыг идэвхтэй статусуудын жагсаалтад нэмэв
     valid_statuses = ["HK", "TK", "SA", "RR", "UN"]
 
     for pax in raw_passengers:
@@ -378,7 +377,6 @@ def parse_pnl(text):
         if pax["TicketNo"] == "-":
             missing_reasons.append("ТК Т дугааргүй")
 
-        # STATUS-ИЙН ЛОГИК: UC статусыг "Мэдээлэл дутуу" хэсэгт тусгайлан заана
         if status == "UC":
             missing_reasons.append("Статус UC")
         elif status not in valid_statuses:
@@ -434,7 +432,8 @@ def generate_email_text_base(target_lang, flight_info):
     raw_route = flight_info['route'] if flight_info['route'] else ""
     dep_time = flight_info['dep_time']
     arr_time = flight_info['arr_time']
-    reason = flight_info['reason']
+    reason_mn = flight_info.get('reason_mn', '')
+    reason_en = flight_info.get('reason_en', '')
     status_type = flight_info['status_type']
 
     mn_dot_date, mn_dash_date, en_date = format_date_custom(flt_date) if flt_date else ("", "", "")
@@ -446,7 +445,7 @@ def generate_email_text_base(target_lang, flight_info):
             body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэг цуцлагдсан болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nЦУЦЛАГДСАН НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}"
             if dep_time: body += f"\n• Нисэх цаг: {dep_time}"
             if arr_time: body += f"\n• Буух цаг: {arr_time}"
-            if reason: body += f"\n• Шалтгаан: {reason}"
+            if reason_mn: body += f"\n• Шалтгаан: {reason_mn}"
             body += "\n\nТийз буцаалт болон өөр өдрийн нислэгээр тийзээ өөрчилж баталгаажуулах талаар тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.\n\nДээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.\n\nХүндэтгэсэн,\nМИАТ ТӨХК"
         else:
             subject = f"{mn_dot_date} –ний {city_title} {flt_no} нислэгийн хуваарийн өөрчлөлтийн тухай мэдэгдэл".strip()
@@ -460,7 +459,7 @@ def generate_email_text_base(target_lang, flight_info):
             body = f"Dear {pax_name},\n\nWe regret to inform you that your flight {flt_no} {full_route_display}, scheduled for {en_date}, has been cancelled.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nCANCELLED FLIGHT DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}\n- Route: {raw_route}"
             if dep_time: body += f"\n- Departure Time: {dep_time}"
             if arr_time: body += f"\n- Arrival Time: {arr_time}"
-            if reason: body += f"\n- Reason: {reason}"
+            if reason_en: body += f"\n- Reason: {reason_en}"
             body += "\n\nFor ticket refund or to change and confirm your ticket for a flight on another date, please contact your travel agent or ticket issuing office as soon as possible.\n\nBest regards,\nMIAT Mongolian Airlines"
         else:
             subject = f"Flight Schedule Change Notification - {flt_no} ({city_title}) – {en_date}".strip()
@@ -521,7 +520,8 @@ def clear_all_data():
     st.session_state.input_route = ""
     st.session_state.input_dep_time = ""
     st.session_state.input_arr_time = ""
-    st.session_state.input_reason = ""
+    st.session_state.input_reason_mn = ""
+    st.session_state.input_reason_en = ""
 
 # ============================================================
 # STREAMLIT UI
@@ -554,8 +554,10 @@ if "input_dep_time" not in st.session_state:
     st.session_state.input_dep_time = ""
 if "input_arr_time" not in st.session_state:
     st.session_state.input_arr_time = ""
-if "input_reason" not in st.session_state:
-    st.session_state.input_reason = ""
+if "input_reason_mn" not in st.session_state:
+    st.session_state.input_reason_mn = ""
+if "input_reason_en" not in st.session_state:
+    st.session_state.input_reason_en = ""
 
 # --- SIDEBAR: AUTHENTICATION ---
 with st.sidebar:
@@ -604,9 +606,12 @@ with col2:
     dep_time = c4.text_input("Dep Time:", placeholder="10:00", key="input_dep_time")
     arr_time = c5.text_input("Arr Time:", placeholder="14:30", key="input_arr_time")
     
-    reason = ""
+    reason_mn = ""
+    reason_en = ""
     if status_type == "CANCEL":
-        reason = st.text_input("Reason (Шалтгаан):", placeholder="Техникийн саатал...", key="input_reason")
+        rc1, rc2 = st.columns(2)
+        reason_mn = rc1.text_input("Шалтгаан (MN):", placeholder="Техникийн саатал...", key="input_reason_mn")
+        reason_en = rc2.text_input("Reason (EN):", placeholder="Technical reason...", key="input_reason_en")
 
     na_action = st.radio("N/A Хэлтэй зорчигчийг авах хэл:", ["MN", "EN", "SKIP"], horizontal=True)
 
@@ -616,7 +621,8 @@ flight_info = {
     "route": route,
     "dep_time": dep_time,
     "arr_time": arr_time,
-    "reason": reason,
+    "reason_mn": reason_mn,
+    "reason_en": reason_en,
     "status_type": status_type
 }
 
@@ -715,7 +721,6 @@ with tab3:
             st.session_state.custom_templates[preview_lang]["subject"] = new_subj
             st.session_state.custom_templates[preview_lang]["text"] = new_text
         else:
-            # ЗӨВХӨН 1 зорчигч сонгогдсон үед тухайн зорчигчийн мэдээллээр орлуулна.
             sample_rec = selected_passengers[0] if selected_cnt == 1 else None
             
             st.markdown(f"**{lbl_title}** {curr_subj}")
