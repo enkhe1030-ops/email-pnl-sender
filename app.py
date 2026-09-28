@@ -1,8 +1,12 @@
 import re
 import smtplib
+import time
+import uuid
+import random
 from datetime import datetime
 from zoneinfo import ZoneInfo  
 from email.message import EmailMessage
+from email.utils import formatdate, formataddr
 import pandas as pd
 import streamlit as st
 
@@ -471,9 +475,47 @@ def generate_email_text_base(target_lang, flight_info):
     return subject, body
 
 def text_to_html(plain_text):
+    """ Спэм шүүлтүүрт өртөхгүй цэвэр, стандарт HTML бүтэц үүсгэх """
     formatted = plain_text.replace('\n', '<br>')
     formatted = re.sub(r'(\b[A-Z-0-9А-ЯӨҮөү\s]+:)', r'<b>\1</b>', formatted)
-    return f'<div style="font-family: Calibri, sans-serif; font-size: 11pt; line-height: 1.5;">{formatted}</div>'
+    
+    html_wrapper = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 14px;
+                color: #333333;
+                line-height: 1.6;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                border: 1px solid #e0e0e0;
+                border-radius: 5px;
+                background-color: #ffffff;
+            }}
+            .footer {{
+                margin-top: 30px;
+                font-size: 12px;
+                color: #777777;
+                border-top: 1px solid #eeeeee;
+                padding-top: 10px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            {formatted}
+        </div>
+    </body>
+    </html>
+    """
+    return html_wrapper
 
 def render_custom_template(template_text, record):
     pax_name = record.get('Passenger Name', '{PAX_NAME}') if record else "{PAX_NAME}"
@@ -486,19 +528,42 @@ def render_custom_template(template_text, record):
     return rendered
 
 # ============================================================
-# SMTP SENDER
+# HIGH DELIVERABILITY SMTP SENDER (ANTI-SPAM ENHANCED)
 # ============================================================
 
-def send_email_smtp(sender_email, app_password, recipient_email, subject, plain_text, html_text):
+def send_email_smtp(sender_email, app_password, recipient_email, recipient_name, subject, plain_text, html_text):
+    """
+    Spam/Junk шүүлтүүрийг давахад шаардлагатай стандартуудыг агуулсан имэйл илгээгч
+    """
     msg = EmailMessage()
+    
+    # 1. Захидал үүсгэсэн огноо ба цагийг RFC 2822 форматаар зааж өгөх
+    msg['Date'] = formatdate(localtime=True)
+    
+    # 2. Дахин давтагдашгүй Message-ID үүсгэх (Спэм шүүлтүүрийн хамгийн чухал шалгуур)
+    domain = sender_email.split('@')[-1] if '@' in sender_email else "miat.com"
+    msg['Message-ID'] = f"<{uuid.uuid4()}@{domain}>"
+    
+    # 3. Илгээгч болон Хүлээн авагчийн бүтэн нэрийг тодорхой болгож форматлах
+    msg['From'] = formataddr(("MIAT Mongolian Airlines", sender_email))
+    msg['To'] = formataddr((recipient_name, recipient_email))
+    
     msg['Subject'] = subject
-    msg['From'] = sender_email
-    msg['To'] = recipient_email
+    
+    # 4. Спэм шүүлтүүрээс зайлсхийхийн тулд стандарт хэдерүүд нэмэх
+    msg['User-Agent'] = "MIAT-NotificationSystem/2.0"
+    msg['X-Mailer'] = "MIAT-NotificationSystem/2.0"
+    msg['Auto-Submitted'] = "auto-generated"  # Автомат имэйл гэдгийг илтгэж, эргүүлж спам хийх эрсдэлийг бууруулна
+
+    # 5. Plain Text болон HTML хоёр хувилбарыг хоёуланг нь хавсаргах (Multipart/Alternative)
     msg.set_content(plain_text)
     msg.add_alternative(html_text, subtype='html')
 
+    # 6. SMTP Сервертэй холбогдож мэйлийг найдвартай илгээх
     with smtplib.SMTP('smtp.gmail.com', 587) as server:
+        server.ehlo()
         server.starttls()
+        server.ehlo()
         server.login(sender_email, app_password)
         server.send_message(msg)
 
@@ -514,7 +579,6 @@ def clear_all_data():
     st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
     st.session_state.edit_mode = False
 
-    # Нислэгийн мэдээллийн бүх талбарыг арилгах
     st.session_state.input_flt_no = ""
     st.session_state.input_flt_date = ""
     st.session_state.input_route = ""
@@ -528,7 +592,7 @@ def clear_all_data():
 # ============================================================
 
 st.set_page_config(page_title="MIAT Flight Notification System", layout="wide")
-st.title("✈️ MIAT Flight Notification System (Web)")
+st.title("✈️ MIAT Flight Notification System (Anti-Spam Optimized)")
 
 # Session state-үүдийг анхны утгаар тохируулах
 if "records" not in st.session_state:
@@ -559,12 +623,17 @@ if "input_reason_mn" not in st.session_state:
 if "input_reason_en" not in st.session_state:
     st.session_state.input_reason_en = ""
 
-# --- SIDEBAR: AUTHENTICATION ---
+# --- SIDEBAR: AUTHENTICATION & DELIVERABILITY TIPS ---
 with st.sidebar:
     st.header("🔑 Илгээгчийн Тохиргоо")
-    st.info("Таны нууц үг системд хадгалагдахгүй бөгөөд зөвхөн одоогийн сесс дээр ашиглагдана.")
     sender_email = st.text_input("Gmail Хаяг", placeholder="example@gmail.com")
     app_password = st.text_input("Gmail App Password", type="password", help="Google Account -> Security -> App Passwords хэсгээс үүсгэнэ.")
+    
+    st.divider()
+    st.markdown("### 🛡️ Inbox-д оруулах зөвлөмж:")
+    st.caption("1. Таны хэрэглэж буй Gmail дээр 2-Step Verification идэвхжсэн байх шаардлагатай.")
+    st.caption("2. Gmail-ээс өдөрт хамгийн ихдээ 500 хүртэл мэйл илгээх хязгаартайг анхаарна уу.")
+    st.caption("3. Байгууллагын (MIAT) дотоод имэйл ашиглах бол сервер дээр SPF болон DKIM тохиргоо хийгдсэн байх ёстой.")
 
 # --- MAIN LAYOUT ---
 col1, col2 = st.columns([1, 1])
@@ -579,7 +648,6 @@ with col1:
             st.session_state.pnl_text = pnl_input
             st.session_state.records, st.session_state.missing_records = parse_pnl(pnl_input)
             
-            # PNL-ээс уншсан мэдээллийг талбаруудад автоматаар тохируулах
             first_pax = st.session_state.records[0] if st.session_state.records else (st.session_state.missing_records[0] if st.session_state.missing_records else {})
             st.session_state.input_flt_no = first_pax.get("Flight", "")
             st.session_state.input_flt_date = first_pax.get("Date", "")
@@ -672,7 +740,6 @@ with tab2:
     else:
         st.info("Дутуу мэдээлэлтэй зорчигч байхгүй байна.")
 
-# Нийт статистик тоо баримтыг доор нэгтгэн харуулах
 active_cnt = len(st.session_state.records)
 missing_cnt = len(st.session_state.missing_records)
 total_pax = active_cnt + missing_cnt
@@ -780,6 +847,7 @@ with col_act1:
         success_count, fail_count = 0, 0
         
         progress_bar = st.progress(0)
+        status_text = st.empty()
         
         for i, pax in enumerate(selected_passengers):
             lang = pax["Language"]
@@ -788,6 +856,8 @@ with col_act1:
                     pax["SendStatus"] = "Skipped (N/A)"
                     continue
                 lang = na_action
+
+            pax_name = pax.get("Passenger Name", "Passenger")
 
             for recipient in pax.get("EmailList", []):
                 try:
@@ -802,16 +872,33 @@ with col_act1:
                     final_plain = render_custom_template(raw_text, pax)
                     final_html = text_to_html(final_plain)
 
-                    send_email_smtp(sender_email, app_password, recipient, final_subj, final_plain, final_html)
+                    # Анти-Спам тохируулгатай мэйл илгээх функц дуудах
+                    send_email_smtp(
+                        sender_email, 
+                        app_password, 
+                        recipient, 
+                        pax_name, 
+                        final_subj, 
+                        final_plain, 
+                        final_html
+                    )
+                    
                     pax["SendStatus"] = "Sent Successfully"
                     pax["SentTime"] = get_ubn_now()
                     success_count += 1
+                    
+                    # Мэйл серверийн шүүлтүүрээс хамгаалж 1.5 - 2.5 секундийн хувьсах саатал (delay) үүсгэх
+                    sleep_time = random.uniform(1.5, 2.5)
+                    status_text.text(f"Илгээж байна ({i+1}/{len(selected_passengers)}): {recipient} ... ({sleep_time:.1f}с хүлээж байна)")
+                    time.sleep(sleep_time)
+
                 except Exception as e:
                     pax["SendStatus"] = f"Failed: {str(e)}"
                     fail_count += 1
             
             progress_bar.progress((i + 1) / len(selected_passengers))
 
+        status_text.empty()
         st.success(f"Ажиллагаа дууслаа! Нийт амжилттай: {success_count}, Амжилтгүй: {fail_count}")
         st.rerun()
 
