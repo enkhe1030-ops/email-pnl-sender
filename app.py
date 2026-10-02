@@ -942,24 +942,39 @@ with tab5:
                     st.warning("Нэвтрэх нэр болон нууц үгээ оруулна уу.")
         
         st.divider()
-        st.markdown("#### 📋 Бүртгэлтэй хэрэглэгчдийн жагсаалт ба устгах")
+        st.markdown("#### 📋 Бүртгэлтэй хэрэглэгчдийн жагсаалт ба удирдлага")
         
         for uname, udata in list(users.items()):
-            u_col1, u_col2, u_col3 = st.columns([3, 2, 1])
-            u_col1.write(f"👤 **{uname}**")
-            u_col2.write(f"Эрх: `{udata['role']}`")
-            
-            if uname == st.session_state.user_info['username']:
-                u_col3.caption("(Одоо нэвтэрсэн)")
-            else:
-                if u_col3.button("🗑️ Устгах", key=f"del_{uname}"):
-                    del users[uname]
-                    save_users(users)
-                    add_log(st.session_state.user_info['username'], "Хэрэглэгч устгасан", details=f"Хэрэглэгч '{uname}' устгагдлаа")
-                    st.success(f"Хэрэглэгч '{uname}' устгагдлаа!")
-                    st.rerun()
+            with st.expander(f"👤 {uname} (Эрх: {udata['role']})"):
+                u_col1, u_col2 = st.columns([3, 1])
+                
+                with u_col1:
+                    # Хэрэглэгчийн нууц үгийг шинэчлэн солих хэсэг
+                    new_reset_pass = st.text_input(f"Шинэ нууц үг тохируулах ({uname}):", type="password", key=f"reset_pass_{uname}")
+                    if st.button(f"🔑 Нууц үг солих", key=f"btn_reset_{uname}"):
+                        if new_reset_pass:
+                            users[uname]["password_hash"] = hash_password(new_reset_pass)
+                            save_users(users)
+                            add_log(st.session_state.user_info['username'], "Нууц үг шинэчилсэн", details=f"Хэрэглэгч '{uname}'-ийн нууц үгийг солов.")
+                            st.success(f"'{uname}' хэрэглэгчийн нууц үг амжилттай шинэчлэгдлээ!")
+                            st.rerun()
+                        else:
+                            st.warning("Шинэ нууц үгээ оруулна уу.")
+
+                with u_col2:
+                    st.write("")
+                    st.write("")
+                    if uname == st.session_state.user_info['username']:
+                        st.caption("(Одоо нэвтэрсэн)")
+                    else:
+                        if st.button("🗑️ Устгах", key=f"del_{uname}"):
+                            del users[uname]
+                            save_users(users)
+                            add_log(st.session_state.user_info['username'], "Хэрэглэгч устгасан", details=f"Хэрэглэгч '{uname}' устгагдлаа")
+                            st.success(f"Хэрэглэгч '{uname}' устгагдлаа!")
+                            st.rerun()
     else:
-        st.info("Хэрэглэгч нэмэх болон устгах эрх зөвхөн АДМИН хэрэглэгчид боломжтой.")
+        st.info("Хэрэглэгч нэмэх, нууц үг шинэчлэх болон устгах эрх зөвхөн АДМИН хэрэглэгчид боломжтой.")
 
 st.divider()
 
