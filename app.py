@@ -13,6 +13,7 @@ import streamlit as st
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.page import PageMargins
 
 # ============================================================
 # SETTINGS & DATA
@@ -556,7 +557,7 @@ def send_email_smtp(sender_email, app_password, recipient_email, recipient_name,
         server.send_message(msg)
 
 # ============================================================
-# EXCEL GENERATOR (OPENPYXL FORMATTING WITH PNL SORTING)
+# EXCEL GENERATOR (OPENPYXL FORMATTING WITH PNL SORTING & MARGINS)
 # ============================================================
 
 def create_formatted_excel(records, missing_records):
@@ -604,7 +605,6 @@ def create_formatted_excel(records, missing_records):
     # PNL No-ийг тоон утгаар эрэмбэлэх туслах функц
     def safe_pnl_sort_key(item):
         pnl_val = str(item.get("PNLNo", "0")).strip()
-        # Зөвхөн цифрүүдийг авч тоо болгох (жишээ нь '001' -> 1)
         digits = re.sub(r'\D', '', pnl_val)
         return int(digits) if digits else 999999
 
@@ -616,7 +616,7 @@ def create_formatted_excel(records, missing_records):
         ws2.append(row_data)
 
     # ----------------------------------------------------
-    # FORMATTING STYLES (Calibri 10, A4, Landscape)
+    # FORMATTING STYLES (Calibri 10, A4, Landscape, Custom Margins)
     # ----------------------------------------------------
     calibri_font = Font(name="Calibri", size=10, bold=False)
     header_font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
@@ -635,6 +635,12 @@ def create_formatted_excel(records, missing_records):
         # A4 Хэвтээ (Landscape) Тохиргоо
         ws.page_setup.paperSize = ws.PAPERSIZE_A4
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+        
+        # PAGE MARGINS ТОХИРГОО (Top: 0.5, Bottom: 0.5, Left: 0.25, Right: 0.25)
+        ws.page_margins.top = 0.5
+        ws.page_margins.bottom = 0.5
+        ws.page_margins.left = 0.25
+        ws.page_margins.right = 0.25
         
         # Толгойн хэсгийг хэлбэржүүлэх
         for cell in ws[1]:
@@ -689,7 +695,7 @@ def clear_all_data():
 # ============================================================
 
 st.set_page_config(page_title="MIAT Flight Notification System", layout="wide")
-st.title("✈️ MIAT Flight Notification System (Anti-Spam Optimized)")
+st.title("✈️️ MIAT Flight Notification System (Anti-Spam Optimized)")
 
 # Session state-үүдийг анхны утгаар тохируулах
 if "records" not in st.session_state:
