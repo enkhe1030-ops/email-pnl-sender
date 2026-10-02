@@ -18,27 +18,25 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 # ============================================================
-# AUTHENTICATION & LOGGING SYSTEM
+# AUTHENTICATION, CONFIG & LOGGING SYSTEM
 # ============================================================
 
 USERS_FILE = "users.json"
 LOGS_FILE = "logs.csv"
+CREDENTIALS_FILE = "saved_credentials.json"
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def load_users():
     if not os.path.exists(USERS_FILE):
-        # Анхны админ хэрэглэгч үүсгэх: admin / admin123
         default_users = {
             "admin": {
                 "password_hash": hash_password("admin123"),
-                "name": "Системийн Админ",
                 "role": "admin"
             },
             "operator1": {
                 "password_hash": hash_password("operator123"),
-                "name": "Оператор 1",
                 "role": "user"
             }
         }
@@ -52,12 +50,28 @@ def save_users(users_dict):
     with open(USERS_FILE, "w", encoding="utf-8") as f:
         json.dump(users_dict, f, ensure_ascii=False, indent=4)
 
-def add_log(username, user_name, action, flight_no="", route="", details=""):
+def load_smtp_credentials():
+    if os.path.exists(CREDENTIALS_FILE):
+        try:
+            with open(CREDENTIALS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {"sender_email": "no.reply.mongolian.airlines@gmail.com", "app_password": ""}
+    return {"sender_email": "no.reply.mongolian.airlines@gmail.com", "app_password": ""}
+
+def save_smtp_credentials(sender_email, app_password):
+    data = {
+        "sender_email": sender_email,
+        "app_password": app_password
+    }
+    with open(CREDENTIALS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+def add_log(username, action, flight_no="", route="", details=""):
     now_str = get_ubn_now()
     log_data = {
         "Timestamp": now_str,
         "Username": username,
-        "User Real Name": user_name,
         "Action": action,
         "Flight No": flight_no,
         "Route": route,
@@ -74,7 +88,6 @@ def add_log(username, user_name, action, flight_no="", route="", details=""):
 # ============================================================
 
 AIRPORT_NAMES = {
-    # 1. МОНГОЛ УЛС (Орон нутаг & Олон улс)
     "UBN": {"MN": "Улаанбаатар", "EN": "Ulaanbaatar"},
     "ULN": {"MN": "Улаанбаатар (Буянт-Ухаа)", "EN": "Ulaanbaatar (Old)"},
     "HVD": {"MN": "Ховд", "EN": "Khovd"},
@@ -93,7 +106,6 @@ AIRPORT_NAMES = {
     "PST": {"MN": "Баян-Өндөр (Орхон)", "EN": "Erdenet"},
     "TXN": {"MN": "Ташаанта", "EN": "Tashaanta"},
 
-    # 2. ЗҮҮН АЗИ
     "ICN": {"MN": "Сөүл (Инчон)", "EN": "Seoul (Incheon)"},
     "GMP": {"MN": "Сөүл (Кимпо)", "EN": "Seoul (Gimpo)"},
     "PUS": {"MN": "Пусан", "EN": "Busan"},
@@ -127,7 +139,6 @@ AIRPORT_NAMES = {
     "MFM": {"MN": "Макао", "EN": "Macau"},
     "TPE": {"MN": "Тайбэй (Таоюань)", "EN": "Taipei (Taoyuan)"},
 
-    # 3. ЗҮҮН ӨМНӨД АЗИ
     "BKK": {"MN": "Бангкок (Суварнабхуми)", "EN": "Bangkok (Suvarnabhumi)"},
     "DMK": {"MN": "Бангкок (Дон Мыанг)", "EN": "Bangkok (Don Mueang)"},
     "HKT": {"MN": "Пүкэт", "EN": "Phuket"},
@@ -142,7 +153,6 @@ AIRPORT_NAMES = {
     "CGK": {"MN": "Жакарта", "EN": "Jakarta"},
     "DPS": {"MN": "Бали (Денпасар)", "EN": "Bali (Denpasar)"},
 
-    # 4. ЕВРОП & БУСАД
     "FRA": {"MN": "Франкфурт", "EN": "Frankfurt"},
     "BER": {"MN": "Берлин", "EN": "Berlin"},
     "MUC": {"MN": "Мюнхен", "EN": "Munich"},
@@ -649,10 +659,9 @@ if not st.session_state.logged_in:
                 st.session_state.logged_in = True
                 st.session_state.user_info = {
                     "username": username_input,
-                    "name": users[username_input]["name"],
                     "role": users[username_input]["role"]
                 }
-                add_log(username_input, users[username_input]["name"], "Нэвтэрсэн", details="Амжилттай нэвтэрлээ")
+                add_log(username_input, "Нэвтэрсэн", details="Амжилттай нэвтэрлээ")
                 st.success("Амжилттай нэвтэрлээ!")
                 st.rerun()
             else:
@@ -691,25 +700,42 @@ if "input_reason_mn" not in st.session_state:
 if "input_reason_en" not in st.session_state:
     st.session_state.input_reason_en = ""
 
-# --- SIDEBAR: AUTHENTICATION & DELIVERABILITY TIPS ---
+# --- SIDEBAR: AUTHENTICATION & SAVED CREDENTIALS ---
 with st.sidebar:
-    st.markdown(f"### 👤 {st.session_state.user_info['name']}")
+    st.markdown(f"### 👤 Хэрэглэгч: **{st.session_state.user_info['username']}**")
     st.caption(f"Эрх: {st.session_state.user_info['role'].upper()}")
     
     if st.button("🚪 Системээс гарах"):
-        add_log(st.session_state.user_info['username'], st.session_state.user_info['name'], "Гарсан", details="Системээс гарлаа")
+        add_log(st.session_state.user_info['username'], "Гарсан", details="Системээс гарлаа")
         st.session_state.logged_in = False
         st.session_state.user_info = None
         st.rerun()
 
     st.divider()
     st.header("🔑 Илгээгчийн Тохиргоо")
-    # Өгөгдсөн gmail хаягийг default тохируулж өгсөн
-    sender_email = st.text_input("Илгээх Gmail Хаяг", value="no.reply.mongolian.airlines@gmail.com")
-    app_password = st.text_input("Gmail App Password", type="password", help="Google Account -> Security -> App Passwords хэсгээс 16 оронтой нууц үг үүсгэнэ.")
     
+    saved_creds = load_smtp_credentials()
+    
+    if st.session_state.user_info["role"] == "admin":
+        st.caption("⚙️ Админ тохиргоо (Санах ойд хадгалагдана)")
+        sender_email = st.text_input("Илгээх Gmail Хаяг", value=saved_creds.get("sender_email", ""))
+        app_password = st.text_input("Gmail App Password", value=saved_creds.get("app_password", ""), type="password", help="16 оронтой App Password оруулаад 'Хадгалах' товч дарна.")
+        
+        if st.button("💾 Хадгалах"):
+            save_smtp_credentials(sender_email, app_password)
+            st.success("App Password амжилттай хадгалагдлаа!")
+            st.rerun()
+    else:
+        sender_email = saved_creds.get("sender_email", "")
+        app_password = saved_creds.get("app_password", "")
+        st.info(f"📧 **Илгээгч:** {sender_email}")
+        if app_password:
+            st.success("✅ App Password бэлэн хадгалагдсан байна.")
+        else:
+            st.warning("⚠️ АДМИН App Password хадгалаагүй байна.")
+
     st.divider()
-    st.markdown("### 🛡️️ Inbox-д оруулах хамгаалалт:")
+    st.markdown("### 🛡 Inbox-д оруулах хамгаалалт:")
     st.caption("1. **No-Reply тохиргоо**: Зорчигч таны хувийн Gmail рүү хариу мэйл бичих боломжгүй.")
     st.caption("2. **Blacklist-ээс хамгаалах**: Код нь мэйл хооронд санамсаргүй хугацааны хүлээлт (2-4.5сек) болон багц амарлага авч илгээнэ.")
     st.caption("3. **Лимит**: Энгийн Gmail өдөрт 500 хүртэл мэйл илгээх лимиттэйг анхаарна уу.")
@@ -778,7 +804,7 @@ flight_info = {
 st.divider()
 
 # --- PASSENGER TABLES, PREVIEW, LOGS & USER MANAGEMENT ---
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📋 Идэвхтэй Зорчигчид", "⚠️ Мэдээлэл Дутуу Зорчигчид", "👁️ Email Preview", "📜 Үйл ажиллагааны түүх", "👤 Хэрэглэгчдийн Управление"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📋 Идэвхтэй Зорчигчид", "⚠️ Мэдээлэл Дутуу Зорчигчид", "👁️ Email Preview", "📜 Үйл ажиллагааны түүх", "👤 Хэрэглэгчдийн Удирдлага"])
 
 with tab1:
     if st.session_state.records:
@@ -842,7 +868,7 @@ with tab3:
             preview_lang = st.radio("Preview Хэл:", ["MN", "EN"], horizontal=True)
         with col_p2:
             st.write("")
-            if st.button("✏️ Засах" if not st.session_state.edit_mode else "👁️ Харж шалгах"):
+            if st.button("✏️️ Засах" if not st.session_state.edit_mode else "👁️ Харж шалгах"):
                 st.session_state.edit_mode = not st.session_state.edit_mode
                 st.rerun()
         with col_p3:
@@ -891,37 +917,49 @@ with tab5:
     
     if st.session_state.user_info["role"] == "admin":
         st.markdown("#### ➕ Шинэ хэрэглэгч нэмэх")
-        c_u1, c_u2, c_u3, c_u4 = st.columns([2, 2, 2, 1])
-        new_uname = c_u1.text_input("Нэвтрэх нэр", key="new_uname")
-        new_pass = c_u2.text_input("Нууц үг", type="password", key="new_pass")
-        new_rname = c_u3.text_input("Хэрэглэгчийн бүтэн нэр", key="new_rname")
-        new_role = c_u4.selectbox("Эрх", ["user", "admin"], key="new_role")
         
-        if st.button("Хэрэглэгч нэмэх", type="primary"):
-            if new_uname and new_pass and new_rname:
-                if new_uname in users:
-                    st.error("Ийм нэвтрэх нэртэй хэрэглэгч аль хэдийн байна!")
+        with st.form("add_user_form", clear_on_submit=True):
+            c_u1, c_u2, c_u3 = st.columns([2, 2, 1])
+            new_uname = c_u1.text_input("Нэвтрэх нэр", key="form_new_uname")
+            new_pass = c_u2.text_input("Нууц үг", type="password", key="form_new_pass")
+            new_role = c_u3.selectbox("Эрх", ["user", "admin"], key="form_new_role")
+            
+            submitted = st.form_submit_button("Хэрэглэгч нэмэх", type="primary")
+            if submitted:
+                if new_uname and new_pass:
+                    if new_uname in users:
+                        st.error("Ийм нэвтрэх нэртэй хэрэглэгч аль хэдийн байна!")
+                    else:
+                        users[new_uname] = {
+                            "password_hash": hash_password(new_pass),
+                            "role": new_role
+                        }
+                        save_users(users)
+                        add_log(st.session_state.user_info['username'], "Хэрэглэгч нэмсэн", details=f"Хэрэглэгч '{new_uname}' нэмэгдлээ")
+                        st.success(f"Хэрэглэгч '{new_uname}' амжилттай нэмэгдлээ!")
+                        st.rerun()
                 else:
-                    users[new_uname] = {
-                        "password_hash": hash_password(new_pass),
-                        "name": new_rname,
-                        "role": new_role
-                    }
-                    save_users(users)
-                    add_log(st.session_state.user_info['username'], st.session_state.user_info['name'], "Хэрэглэгч нэмсэн", details=f"{new_uname} ({new_rname}) нэмэгдлээ")
-                    st.success(f"Хэрэглэгч '{new_uname}' амжилттай нэмэгдлээ!")
-                    st.rerun()
-            else:
-                st.warning("Мэдээллийг бүрэн оруулна уу.")
+                    st.warning("Нэвтрэх нэр болон нууц үгээ оруулна уу.")
         
         st.divider()
-        st.markdown("#### 📋 Бүртгэлтэй хэрэглэгчдийн жагсаалт")
-        user_list = []
-        for uname, udata in users.items():
-            user_list.append({"Нэвтрэх нэр": uname, "Нэр": udata["name"], "Эрх": udata["role"]})
-        st.dataframe(pd.DataFrame(user_list), use_container_width=True)
+        st.markdown("#### 📋 Бүртгэлтэй хэрэглэгчдийн жагсаалт ба устгах")
+        
+        for uname, udata in list(users.items()):
+            u_col1, u_col2, u_col3 = st.columns([3, 2, 1])
+            u_col1.write(f"👤 **{uname}**")
+            u_col2.write(f"Эрх: `{udata['role']}`")
+            
+            if uname == st.session_state.user_info['username']:
+                u_col3.caption("(Одоо нэвтэрсэн)")
+            else:
+                if u_col3.button("🗑️ Устгах", key=f"del_{uname}"):
+                    del users[uname]
+                    save_users(users)
+                    add_log(st.session_state.user_info['username'], "Хэрэглэгч устгасан", details=f"Хэрэглэгч '{uname}' устгагдлаа")
+                    st.success(f"Хэрэглэгч '{uname}' устгагдлаа!")
+                    st.rerun()
     else:
-        st.info("Хэрэглэгч нэмэх эрх зөвхөн АДМИН хэрэглэгчид боломжтой.")
+        st.info("Хэрэглэгч нэмэх болон устгах эрх зөвхөн АДМИН хэрэглэгчид боломжтой.")
 
 st.divider()
 
@@ -961,7 +999,7 @@ col_act1, col_act2 = st.columns([2, 1])
 with col_act1:
     if st.button("🚀 СОНГОСОН ЗОРЧИГЧИДОД ИМЭЙЛ ИЛГЭЭХ", type="primary", use_container_width=True):
         if not sender_email or not app_password:
-            st.error("Систем нэвтрэх Gmail хаяг болон App Password оруулаагүй байна!")
+            st.error("Систем нэвтрэх Gmail хаяг болон App Password оруулаагүй байна! Админ хэрэглэгчээр тохиргоог хадгална уу.")
         elif not st.session_state.records:
             st.warning("Илгээх зорчигч байхгүй байна.")
         elif selected_cnt == 0:
@@ -1035,7 +1073,6 @@ with col_act1:
         # LOGS ТҮҮХЭД ХАДГАЛАХ
         add_log(
             st.session_state.user_info['username'], 
-            st.session_state.user_info['name'], 
             "Имэйл илгээсэн", 
             flight_no=flt_no, 
             route=route, 
