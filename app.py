@@ -4,6 +4,9 @@ import time
 import uuid
 import random
 import io
+import os
+import json
+import hashlib
 from datetime import datetime
 from zoneinfo import ZoneInfo  
 from email.message import EmailMessage
@@ -13,6 +16,58 @@ import streamlit as st
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+
+# ============================================================
+# AUTHENTICATION & LOGGING SYSTEM
+# ============================================================
+
+USERS_FILE = "users.json"
+LOGS_FILE = "logs.csv"
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def load_users():
+    if not os.path.exists(USERS_FILE):
+        # Анхны админ хэрэглэгч үүсгэх: admin / admin123
+        default_users = {
+            "admin": {
+                "password_hash": hash_password("admin123"),
+                "name": "Системийн Админ",
+                "role": "admin"
+            },
+            "operator1": {
+                "password_hash": hash_password("operator123"),
+                "name": "Оператор 1",
+                "role": "user"
+            }
+        }
+        save_users(default_users)
+        return default_users
+    
+    with open(USERS_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_users(users_dict):
+    with open(USERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(users_dict, f, ensure_ascii=False, indent=4)
+
+def add_log(username, user_name, action, flight_no="", route="", details=""):
+    now_str = get_ubn_now()
+    log_data = {
+        "Timestamp": now_str,
+        "Username": username,
+        "User Real Name": user_name,
+        "Action": action,
+        "Flight No": flight_no,
+        "Route": route,
+        "Details": details
+    }
+    df_new = pd.DataFrame([log_data])
+    if not os.path.exists(LOGS_FILE):
+        df_new.to_csv(LOGS_FILE, index=False, encoding="utf-8-sig")
+    else:
+        df_new.to_csv(LOGS_FILE, mode="a", header=False, index=False, encoding="utf-8-sig")
 
 # ============================================================
 # SETTINGS & DATA
@@ -376,7 +431,6 @@ def generate_email_text_base(target_lang, flight_info):
     return subject, body
 
 def text_to_html(plain_text):
-    """ SPAM шүүлтүүрээс гарах цэвэр, HTML5 стандарт бүтэц """
     formatted = plain_text.replace('\n', '<br>')
     formatted = re.sub(r'(\b[A-Z-0-9А-ЯӨҮөү\s]+:)', r'<b>\1</b>', formatted)
     
@@ -405,14 +459,6 @@ def text_to_html(plain_text):
                 background-color: #ffffff;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             }}
-            .footer {{
-                margin-top: 25px;
-                font-size: 11px;
-                color: #777777;
-                border-top: 1px solid #eeeeee;
-                padding-top: 12px;
-                font-style: italic;
-            }}
         </style>
     </head>
     <body>
@@ -435,44 +481,31 @@ def render_custom_template(template_text, record):
     return rendered
 
 # ============================================================
-# HIGH DELIVERABILITY SMTP SENDER (ANTI-SPAM & NO-REPLY ENHANCED)
+# HIGH DELIVERABILITY SMTP SENDER
 # ============================================================
 
 def send_email_smtp(sender_email, app_password, recipient_email, recipient_name, subject, plain_text, html_text):
-    """
-    Spam/Junk шүүлтүүрийг давж, Inbox-т оруулах оновчилсон SMTP модуль
-    """
     msg = EmailMessage()
-    
-    # 1. Цагийн тохиргоо (RFC 2822)
     msg['Date'] = formatdate(localtime=True)
     
-    # 2. Серверийн сэжиг арилгах Uniq Message-ID
     unique_id = uuid.uuid4().hex
     msg['Message-ID'] = f"<{unique_id}.notification@gmail.com>"
     
-    # 3. Илгээгчийн нэр болон Хүлээн авагчийн бүтэн нэр
     msg['From'] = formataddr(("MIAT Mongolian Airlines Notification", sender_email))
     msg['To'] = formataddr((recipient_name, recipient_email))
-    
-    # 4. РЕПЛАЙ АВАХГҮЙ ТОХИРГОО (NO-REPLY HEADER)
-    # Хүлээн авагч хариу бичих үед таны хувийн Gmail рүү биш хариу авах боломжгүй no-reply хаяг руу зааж өгнө.
     msg['Reply-To'] = "MIAT No-Reply <no-reply@miat.com>"
     
     msg['Subject'] = subject
     
-    # 5. SPAM ШҮҮЛТҮҮРИЙН ТРАСТ ОНООГ ӨСГӨХ ХЭДЕРҮҮД
     msg['User-Agent'] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) MIAT-NotificationManager/2.5"
     msg['X-Mailer'] = "MIAT-NotificationManager/2.5"
     msg['Auto-Submitted'] = "auto-generated" 
     msg['Precedence'] = "bulk"
     msg['List-Unsubscribe'] = "<mailto:no-reply@miat.com?subject=unsubscribe>"
 
-    # 6. Multi-part MIME (Plain + HTML хоёуланг нэгтгэх)
     msg.set_content(plain_text)
     msg.add_alternative(html_text, subtype='html')
 
-    # 7. TLS Холболтоор аюулгүй илгээх
     with smtplib.SMTP('smtp.gmail.com', 587) as server:
         server.ehlo()
         server.starttls()
@@ -481,13 +514,11 @@ def send_email_smtp(sender_email, app_password, recipient_email, recipient_name,
         server.send_message(msg)
 
 # ============================================================
-# EXCEL GENERATOR (OPENPYXL FORMATTING WITH PNL SORTING)
+# EXCEL GENERATOR
 # ============================================================
 
 def create_formatted_excel(records, missing_records):
     wb = openpyxl.Workbook()
-    
-    # Sheet 1: All Passengers
     ws1 = wb.active
     ws1.title = "Passenger List"
     
@@ -503,7 +534,6 @@ def create_formatted_excel(records, missing_records):
     for row in df1.itertuples(index=False):
         ws1.append(list(row))
         
-    # Sheet 2: PNL Summary
     ws2 = wb.create_sheet(title="PNL Summary")
     target_cols = [
         ("PNLNo", "PNL No"),
@@ -526,7 +556,6 @@ def create_formatted_excel(records, missing_records):
         row_data = [rec.get(col[0], "-") for col in target_cols]
         ws2.append(row_data)
 
-    # Styles
     calibri_font = Font(name="Calibri", size=10, bold=False)
     header_font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
@@ -592,11 +621,47 @@ def clear_all_data():
     st.session_state.input_reason_en = ""
 
 # ============================================================
-# STREAMLIT UI
+# STREAMLIT INITIALIZATION & AUTHENTICATION
 # ============================================================
 
 st.set_page_config(page_title="MIAT Flight Notification System", layout="wide")
-st.title("✈️ MIAT Flight Notification System (Inbox & Anti-Spam Safe)")
+
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "user_info" not in st.session_state:
+    st.session_state.user_info = None
+
+# AUTHENTICATION SCREEN
+if not st.session_state.logged_in:
+    st.markdown("<h2 style='text-align: center;'>✈️ MIAT Flight Notification System</h2>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center;'>Системд нэвтрэх</h4>", unsafe_allow_html=True)
+    
+    col_l1, col_l2, col_l3 = st.columns([1, 1, 1])
+    with col_l2:
+        username_input = st.text_input("Нэвтрэх нэр (Username)")
+        password_input = st.text_input("Нууц үг (Password)", type="password")
+        
+        if st.button("Нэвтрэх", type="primary", use_container_width=True):
+            users = load_users()
+            hashed = hash_password(password_input)
+            
+            if username_input in users and users[username_input]["password_hash"] == hashed:
+                st.session_state.logged_in = True
+                st.session_state.user_info = {
+                    "username": username_input,
+                    "name": users[username_input]["name"],
+                    "role": users[username_input]["role"]
+                }
+                add_log(username_input, users[username_input]["name"], "Нэвтэрсэн", details="Амжилттай нэвтэрлээ")
+                st.success("Амжилттай нэвтэрлээ!")
+                st.rerun()
+            else:
+                st.error("Нэвтрэх нэр эсвэл нууц үг буруу байна!")
+    st.stop()
+
+# ============================================================
+# MAIN APPLICATION (LOGGED IN)
+# ============================================================
 
 if "records" not in st.session_state:
     st.session_state.records = []
@@ -628,15 +693,28 @@ if "input_reason_en" not in st.session_state:
 
 # --- SIDEBAR: AUTHENTICATION & DELIVERABILITY TIPS ---
 with st.sidebar:
+    st.markdown(f"### 👤 {st.session_state.user_info['name']}")
+    st.caption(f"Эрх: {st.session_state.user_info['role'].upper()}")
+    
+    if st.button("🚪 Системээс гарах"):
+        add_log(st.session_state.user_info['username'], st.session_state.user_info['name'], "Гарсан", details="Системээс гарлаа")
+        st.session_state.logged_in = False
+        st.session_state.user_info = None
+        st.rerun()
+
+    st.divider()
     st.header("🔑 Илгээгчийн Тохиргоо")
-    sender_email = st.text_input("Хувийн Gmail Хаяг", placeholder="example@gmail.com")
+    # Өгөгдсөн gmail хаягийг default тохируулж өгсөн
+    sender_email = st.text_input("Илгээх Gmail Хаяг", value="no.reply.mongolian.airlines@gmail.com")
     app_password = st.text_input("Gmail App Password", type="password", help="Google Account -> Security -> App Passwords хэсгээс 16 оронтой нууц үг үүсгэнэ.")
     
     st.divider()
-    st.markdown("### 🛡️ Inbox-д оруулах хамгаалалт:")
+    st.markdown("### 🛡️️ Inbox-д оруулах хамгаалалт:")
     st.caption("1. **No-Reply тохиргоо**: Зорчигч таны хувийн Gmail рүү хариу мэйл бичих боломжгүй.")
     st.caption("2. **Blacklist-ээс хамгаалах**: Код нь мэйл хооронд санамсаргүй хугацааны хүлээлт (2-4.5сек) болон багц амарлага авч илгээнэ.")
     st.caption("3. **Лимит**: Энгийн Gmail өдөрт 500 хүртэл мэйл илгээх лимиттэйг анхаарна уу.")
+
+st.title("✈️ MIAT Flight Notification System (Inbox & Anti-Spam Safe)")
 
 # --- MAIN LAYOUT ---
 col1, col2 = st.columns([1, 1])
@@ -699,8 +777,8 @@ flight_info = {
 
 st.divider()
 
-# --- PASSENGER TABLES & PREVIEW ---
-tab1, tab2, tab3 = st.tabs(["📋 Идэвхтэй Зорчигчид", "⚠️ Мэдээлэл Дутуу Зорчигчид", "👁️ Email Preview"])
+# --- PASSENGER TABLES, PREVIEW, LOGS & USER MANAGEMENT ---
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📋 Идэвхтэй Зорчигчид", "⚠️ Мэдээлэл Дутуу Зорчигчид", "👁️ Email Preview", "📜 Үйл ажиллагааны түүх", "👤 Хэрэглэгчдийн Управление"])
 
 with tab1:
     if st.session_state.records:
@@ -796,6 +874,54 @@ with tab3:
             rendered_plain = render_custom_template(curr_text, sample_rec)
             rendered_html = text_to_html(rendered_plain)
             st.components.v1.html(rendered_html, height=380, scrolling=True)
+
+# TAB 4: AUDIT LOG HISTORY
+with tab4:
+    st.subheader("📜 Имэйл илгээсэн болон системийн үйл ажиллагааны түүх")
+    if os.path.exists(LOGS_FILE):
+        df_logs = pd.read_csv(LOGS_FILE)
+        st.dataframe(df_logs.sort_index(ascending=False), use_container_width=True)
+    else:
+        st.info("Одоогоор лог түүх үүсээгүй байна.")
+
+# TAB 5: USER MANAGEMENT
+with tab5:
+    st.subheader("👥 Хэрэглэгчийн бүртгэл ба тохиргоо")
+    users = load_users()
+    
+    if st.session_state.user_info["role"] == "admin":
+        st.markdown("#### ➕ Шинэ хэрэглэгч нэмэх")
+        c_u1, c_u2, c_u3, c_u4 = st.columns([2, 2, 2, 1])
+        new_uname = c_u1.text_input("Нэвтрэх нэр", key="new_uname")
+        new_pass = c_u2.text_input("Нууц үг", type="password", key="new_pass")
+        new_rname = c_u3.text_input("Хэрэглэгчийн бүтэн нэр", key="new_rname")
+        new_role = c_u4.selectbox("Эрх", ["user", "admin"], key="new_role")
+        
+        if st.button("Хэрэглэгч нэмэх", type="primary"):
+            if new_uname and new_pass and new_rname:
+                if new_uname in users:
+                    st.error("Ийм нэвтрэх нэртэй хэрэглэгч аль хэдийн байна!")
+                else:
+                    users[new_uname] = {
+                        "password_hash": hash_password(new_pass),
+                        "name": new_rname,
+                        "role": new_role
+                    }
+                    save_users(users)
+                    add_log(st.session_state.user_info['username'], st.session_state.user_info['name'], "Хэрэглэгч нэмсэн", details=f"{new_uname} ({new_rname}) нэмэгдлээ")
+                    st.success(f"Хэрэглэгч '{new_uname}' амжилттай нэмэгдлээ!")
+                    st.rerun()
+            else:
+                st.warning("Мэдээллийг бүрэн оруулна уу.")
+        
+        st.divider()
+        st.markdown("#### 📋 Бүртгэлтэй хэрэглэгчдийн жагсаалт")
+        user_list = []
+        for uname, udata in users.items():
+            user_list.append({"Нэвтрэх нэр": uname, "Нэр": udata["name"], "Эрх": udata["role"]})
+        st.dataframe(pd.DataFrame(user_list), use_container_width=True)
+    else:
+        st.info("Хэрэглэгч нэмэх эрх зөвхөн АДМИН хэрэглэгчид боломжтой.")
 
 st.divider()
 
@@ -893,7 +1019,7 @@ with col_act1:
                     status_text.text(f"Илгээж байна ({i+1}/{len(selected_passengers)}): {recipient} ... ({sleep_time:.1f}с хүлээж байна)")
                     time.sleep(sleep_time)
 
-                    # Batch delay: 15 мэйл илгээх бүрт 12 секунд амрах (Gmail Blacklist-ээс сэргийлнэ)
+                    # Batch delay: 15 мэйл илгээх бүрт 12 секунд амрах
                     if (i + 1) % 15 == 0 and i + 1 < len(selected_passengers):
                         status_text.text(f"⏳ Серверийн ачааллыг багасгахад 12 секунд хүлээж байна...")
                         time.sleep(12)
@@ -905,6 +1031,17 @@ with col_act1:
             progress_bar.progress((i + 1) / len(selected_passengers))
 
         status_text.empty()
+        
+        # LOGS ТҮҮХЭД ХАДГАЛАХ
+        add_log(
+            st.session_state.user_info['username'], 
+            st.session_state.user_info['name'], 
+            "Имэйл илгээсэн", 
+            flight_no=flt_no, 
+            route=route, 
+            details=f"Амжилттай: {success_count}, Амжилтгүй: {fail_count}"
+        )
+        
         st.success(f"Ажиллагаа дууслаа! Нийт амжилттай: {success_count}, Амжилтгүй: {fail_count}")
         st.rerun()
 
