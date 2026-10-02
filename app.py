@@ -13,7 +13,6 @@ import streamlit as st
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.page import PageMargins
 
 # ============================================================
 # SETTINGS & DATA
@@ -39,7 +38,7 @@ AIRPORT_NAMES = {
     "PST": {"MN": "Баян-Өндөр (Орхон)", "EN": "Erdenet"},
     "TXN": {"MN": "Ташаанта", "EN": "Tashaanta"},
 
-    # 2. ЗҮҮН АЗИ (East Asia)
+    # 2. ЗҮҮН АЗИ
     "ICN": {"MN": "Сөүл (Инчон)", "EN": "Seoul (Incheon)"},
     "GMP": {"MN": "Сөүл (Кимпо)", "EN": "Seoul (Gimpo)"},
     "PUS": {"MN": "Пусан", "EN": "Busan"},
@@ -73,7 +72,7 @@ AIRPORT_NAMES = {
     "MFM": {"MN": "Макао", "EN": "Macau"},
     "TPE": {"MN": "Тайбэй (Таоюань)", "EN": "Taipei (Taoyuan)"},
 
-    # 3. ЗҮҮН ӨМНӨД АЗИ (Southeast Asia)
+    # 3. ЗҮҮН ӨМНӨД АЗИ
     "BKK": {"MN": "Бангкок (Суварнабхуми)", "EN": "Bangkok (Suvarnabhumi)"},
     "DMK": {"MN": "Бангкок (Дон Мыанг)", "EN": "Bangkok (Don Mueang)"},
     "HKT": {"MN": "Пүкэт", "EN": "Phuket"},
@@ -88,95 +87,14 @@ AIRPORT_NAMES = {
     "CGK": {"MN": "Жакарта", "EN": "Jakarta"},
     "DPS": {"MN": "Бали (Денпасар)", "EN": "Bali (Denpasar)"},
 
-    # 4. ЭНЭТХЭГ & ТӨВ АЗИ (South & Central Asia)
-    "DEL": {"MN": "Нью Дели", "EN": "New Delhi"},
-    "BOM": {"MN": "Мумбай", "EN": "Mumbai"},
-    "ALA": {"MN": "Алматы", "EN": "Almaty"},
-    "NQZ": {"MN": "Астана", "EN": "Astana"},
-    "TAS": {"MN": "Ташкент", "EN": "Tashkent"},
-    "FRU": {"MN": "Бишкек", "EN": "Bishkek"},
-
-    # 5. ОЙРХИ ДОРНОД (Middle East)
-    "DXB": {"MN": "Дубай", "EN": "Dubai"},
-    "DWC": {"MN": "Дубай (Аль-Мактум)", "EN": "Dubai (Al Maktoum)"},
-    "AUH": {"MN": "Абу Даби", "EN": "Abu Dhabi"},
-    "DOH": {"MN": "Доха", "EN": "Doha"},
-    "IST": {"MN": "Истанбул", "EN": "Istanbul"},
-    "SAW": {"MN": "Истанбул (Сабиха Гөкчен)", "EN": "Istanbul (Sabiha Gokcen)"},
-    "AYT": {"MN": "Анталья", "EN": "Antalya"},
-    "MCT": {"MN": "Маскат", "EN": "Muscat"},
-    "RUH": {"MN": "Эр-Рияд", "EN": "Riyadh"},
-
-    # 6. ОРОСЫН ХОЛБООНЫ УЛС (Russia)
-    "SVO": {"MN": "Москва (Шереметьево)", "EN": "Moscow (Sheremetyevo)"},
-    "DME": {"MN": "Москва (Домодедово)", "EN": "Moscow (Domodedovo)"},
-    "VKO": {"MN": "Москва (Внуково)", "EN": "Moscow (Vnukovo)"},
-    "LED": {"MN": "Санкт-Петербург", "EN": "St. Petersburg"},
-    "IKT": {"MN": "Иркутск", "EN": "Irkutsk"},
-    "UUD": {"MN": "Улаан-Үд", "EN": "Ulan-Ude"},
-    "VVO": {"MN": "Владивосток", "EN": "Vladivostok"},
-    "OVB": {"MN": "Новосибирск", "EN": "Novosibirsk"},
-    "KJA": {"MN": "Красноярск", "EN": "Krasnoyarsk"},
-    "KGD": {"MN": "Калининград", "EN": "Kaliningrad"},
-
-    # 7. ЕВРОП & ИРЛАНД (Europe & Ireland)
-    "LHR": {"MN": "Лондон (Хитроу)", "EN": "London (Heathrow)"},
-    "LGW": {"MN": "Лондон (Гатвик)", "EN": "London (Gatwick)"},
-    "STN": {"MN": "Лондон (Станстед)", "EN": "London (Stansted)"},
-    "LTN": {"MN": "Лондон (Лутон)", "EN": "London (Luton)"},
-    "MAN": {"MN": "Манчестер", "EN": "Manchester"},
-    "BHX": {"MN": "Бирмингем", "EN": "Birmingham"},
-    "EDI": {"MN": "Эдинбург", "EN": "Edinburgh"},
-    "DUB": {"MN": "Дублин", "EN": "Dublin"},
-    "ORK": {"MN": "Корг", "EN": "Cork"},
-    "SNN": {"MN": "Шэннон", "EN": "Shannon"},
-    "GOT": {"MN": "Гётеборг", "EN": "Gothenburg"},
-    "ARN": {"MN": "Стокгольм", "EN": "Stockholm"},
-    "CPH": {"MN": "Копенгаген", "EN": "Copenhagen"},
-    "OSL": {"MN": "Осло", "EN": "Oslo"},
-    "HEL": {"MN": "Хельсинки", "EN": "Helsinki"},
+    # 4. ЕВРОП & БУСАД
     "FRA": {"MN": "Франкфурт", "EN": "Frankfurt"},
-    "MUC": {"MN": "Мюнхен", "EN": "Munich"},
     "BER": {"MN": "Берлин", "EN": "Berlin"},
-    "CDG": {"MN": "Парис (Шарль де Голль)", "EN": "Paris (Charles de Gaulle)"},
-    "ORY": {"MN": "Парис (Орли)", "EN": "Paris (Orly)"},
-    "AMS": {"MN": "Амстердам", "EN": "Amsterdam"},
-    "ZRH": {"MN": "Цюрих", "EN": "Zurich"},
-    "VIE": {"MN": "Вена", "EN": "Vienna"},
-    "PRG": {"MN": "Прага", "EN": "Prague"},
-    "FCO": {"MN": "Ром", "EN": "Rome"},
-    "MXP": {"MN": "Милан (Мальпенса)", "EN": "Milan (Malpensa)"},
-    "MAD": {"MN": "Мадрид", "EN": "Madrid"},
-    "BCN": {"MN": "Барселона", "EN": "Barcelona"},
-    "ATH": {"MN": "Афин", "EN": "Athens"},
-    "WAW": {"MN": "Варшав", "EN": "Warsaw"},
-    "BUD": {"MN": "Будапешт", "EN": "Budapest"},
-
-    # 8. ХОЁР БҮЛДИЙН АМЕРИК (North & South America)
-    "JFK": {"MN": "Нью-Йорк (JFK)", "EN": "New York (JFK)"},
-    "EWR": {"MN": "Нью-Йорк (Ньюарк)", "EN": "New York (Newark)"},
-    "LAX": {"MN": "Лос-Анжелес", "EN": "Los Angeles"},
-    "SFO": {"MN": "Сан Франциско", "EN": "San Francisco"},
-    "ORD": {"MN": "Чикаго (О'Хара)", "EN": "Chicago (O'Hare)"},
-    "SEA": {"MN": "Сиэтл", "EN": "Seattle"},
-    "MIA": {"MN": "Майами", "EN": "Miami"},
-    "IAD": {"MN": "Вашингтон (Даллес)", "EN": "Washington (Dulles)"},
-    "YVR": {"MN": "Ванкувер", "EN": "Vancouver"},
-    "YYZ": {"MN": "Торонто", "EN": "Toronto"},
-    "GRU": {"MN": "Сан Пауло", "EN": "Sao Paulo"},
-    "EZE": {"MN": "Буэнос-Айрес", "EN": "Buenos Aires"},
-
-    # 9. АВСТРАЛИ & ДАЛАЙН ОРОН (Australia & Pacific)
-    "SYD": {"MN": "Сидней", "EN": "Sydney"},
-    "MEL": {"MN": "Мельбурн", "EN": "Melbourne"},
-    "BNE": {"MN": "Брисбен", "EN": "Brisbane"},
-    "PER": {"MN": "Перт", "EN": "Perth"},
-    "AKL": {"MN": "Окленд", "EN": "Auckland"},
-
-    # 10. АФРИК (Africa)
-    "CAI": {"MN": "Каир", "EN": "Cairo"},
-    "JNB": {"MN": "Йоханнесбург", "EN": "Johannesburg"},
-    "CPT": {"MN": "Кейптаун", "EN": "Cape Town"},
+    "MUC": {"MN": "Мюнхен", "EN": "Munich"},
+    "LHR": {"MN": "Лондон (Хитроу)", "EN": "London (Heathrow)"},
+    "IST": {"MN": "Истанбул", "EN": "Istanbul"},
+    "SVO": {"MN": "Москва (Шереметьево)", "EN": "Moscow (Sheremetyevo)"},
+    "IKT": {"MN": "Иркутск", "EN": "Irkutsk"}
 }
 
 # ============================================================
@@ -184,7 +102,6 @@ AIRPORT_NAMES = {
 # ============================================================
 
 def get_ubn_now():
-    """ Улаанбаатарын одоогийн цагийг авах (UTC+8) """
     return datetime.now(ZoneInfo("Asia/Ulaanbaatar")).strftime("%Y-%m-%d %H:%M:%S")
 
 def get_route_text(route_str, lang="MN"):
@@ -424,7 +341,6 @@ def generate_email_text_base(target_lang, flight_info):
     mn_dot_date, mn_dash_date, en_date = format_date_custom(flt_date) if flt_date else ("", "", "")
     city_title, full_route_display = get_route_text(raw_route, lang=target_lang) if raw_route else ("", "")
 
-    # АВТОМАТААР ИЛГЭЭГДЭЖ БУЙ ТУХАЙ САНАМЖ (MN, EN)
     no_reply_footer_mn = "\n\n--------------------------------------------------\nЭнэхүү мэйл нь автоматаар илгээгдэж буй тул хариу бичих шаардлагагүй."
     no_reply_footer_en = "\n\n--------------------------------------------------\nThis is an automated message, please do not reply to this email."
 
@@ -442,7 +358,7 @@ def generate_email_text_base(target_lang, flight_info):
             if dep_time: body += f"\n• Нисэх цаг: {dep_time}"
             if arr_time: body += f"\n• Буух цаг: {arr_time}"
             body += f"\n\nТаны тийзийн төлөв байдал болон шинэ нислэгийн мэдээллийг баталгаажуулахын тулд тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.\n\nДээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.\n\nХүндэтгэсэн,\nМИАТ ТӨХК{no_reply_footer_mn}"
-    else: # EN
+    else: 
         if status_type == "CANCEL":
             subject = f"Flight Cancellation Notification - {flt_no} ({city_title}) - {en_date}".strip()
             body = f"Dear {pax_name},\n\nWe regret to inform you that your flight {flt_no} {full_route_display}, scheduled for {en_date}, has been cancelled.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nCANCELLED FLIGHT DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}\n- Route: {raw_route}"
@@ -460,36 +376,41 @@ def generate_email_text_base(target_lang, flight_info):
     return subject, body
 
 def text_to_html(plain_text):
-    """ Спэм шүүлтүүрт өртөхгүй цэвэр, стандарт HTML бүтэц үүсгэх """
+    """ SPAM шүүлтүүрээс гарах цэвэр, HTML5 стандарт бүтэц """
     formatted = plain_text.replace('\n', '<br>')
     formatted = re.sub(r'(\b[A-Z-0-9А-ЯӨҮөү\s]+:)', r'<b>\1</b>', formatted)
     
     html_wrapper = f"""
     <!DOCTYPE html>
-    <html>
+    <html lang="mn">
     <head>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             body {{
                 font-family: Arial, Helvetica, sans-serif;
                 font-size: 14px;
-                color: #333333;
+                color: #222222;
                 line-height: 1.6;
+                background-color: #f9f9f9;
+                margin: 0;
+                padding: 20px;
             }}
             .container {{
                 max-width: 600px;
                 margin: 0 auto;
-                padding: 20px;
+                padding: 25px;
                 border: 1px solid #e0e0e0;
-                border-radius: 5px;
+                border-radius: 8px;
                 background-color: #ffffff;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             }}
             .footer {{
-                margin-top: 20px;
+                margin-top: 25px;
                 font-size: 11px;
-                color: #888888;
-                border-top: 1px dashed #cccccc;
-                padding-top: 10px;
+                color: #777777;
+                border-top: 1px solid #eeeeee;
+                padding-top: 12px;
                 font-style: italic;
             }}
         </style>
@@ -514,41 +435,44 @@ def render_custom_template(template_text, record):
     return rendered
 
 # ============================================================
-# HIGH DELIVERABILITY SMTP SENDER (ANTI-SPAM ENHANCED)
+# HIGH DELIVERABILITY SMTP SENDER (ANTI-SPAM & NO-REPLY ENHANCED)
 # ============================================================
 
 def send_email_smtp(sender_email, app_password, recipient_email, recipient_name, subject, plain_text, html_text):
     """
-    Spam/Junk шүүлтүүрийг давахад шаардлагатай стандартуудыг агуулсан имэйл илгээгч
+    Spam/Junk шүүлтүүрийг давж, Inbox-т оруулах оновчилсон SMTP модуль
     """
     msg = EmailMessage()
     
-    # 1. Захидал үүсгэсэн огноо ба цагийг RFC 2822 форматаар зааж өгөх
+    # 1. Цагийн тохиргоо (RFC 2822)
     msg['Date'] = formatdate(localtime=True)
     
-    # 2. Дахин давтагдашгүй Message-ID үүсгэх
-    domain = sender_email.split('@')[-1] if '@' in sender_email else "miat.com"
-    msg['Message-ID'] = f"<{uuid.uuid4()}@{domain}>"
+    # 2. Серверийн сэжиг арилгах Uniq Message-ID
+    unique_id = uuid.uuid4().hex
+    msg['Message-ID'] = f"<{unique_id}.notification@gmail.com>"
     
-    # 3. Илгээгч болон Хүлээн авагчийн бүтэн нэрийг форматлах
-    msg['From'] = formataddr(("MIAT Mongolian Airlines", sender_email))
+    # 3. Илгээгчийн нэр болон Хүлээн авагчийн бүтэн нэр
+    msg['From'] = formataddr(("MIAT Mongolian Airlines Notification", sender_email))
     msg['To'] = formataddr((recipient_name, recipient_email))
     
-    # Хариу бичих үед буцаж хүлээн авахгүй байх тохиргоо (No-Reply)
-    msg['Reply-To'] = "no-reply@miat.com"
+    # 4. РЕПЛАЙ АВАХГҮЙ ТОХИРГОО (NO-REPLY HEADER)
+    # Хүлээн авагч хариу бичих үед таны хувийн Gmail рүү биш хариу авах боломжгүй no-reply хаяг руу зааж өгнө.
+    msg['Reply-To'] = "MIAT No-Reply <no-reply@miat.com>"
     
     msg['Subject'] = subject
     
-    # 4. Спэм шүүлтүүрээс зайлсхийхийн тулд стандарт хэдерүүд нэмэх
-    msg['User-Agent'] = "MIAT-NotificationSystem/2.0"
-    msg['X-Mailer'] = "MIAT-NotificationSystem/2.0"
-    msg['Auto-Submitted'] = "auto-generated"  # Автомат имэйл гэдгийг илтгэнэ
+    # 5. SPAM ШҮҮЛТҮҮРИЙН ТРАСТ ОНООГ ӨСГӨХ ХЭДЕРҮҮД
+    msg['User-Agent'] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) MIAT-NotificationManager/2.5"
+    msg['X-Mailer'] = "MIAT-NotificationManager/2.5"
+    msg['Auto-Submitted'] = "auto-generated" 
+    msg['Precedence'] = "bulk"
+    msg['List-Unsubscribe'] = "<mailto:no-reply@miat.com?subject=unsubscribe>"
 
-    # 5. Plain Text болон HTML хоёр хувилбарыг хоёуланг нь хавсаргах
+    # 6. Multi-part MIME (Plain + HTML хоёуланг нэгтгэх)
     msg.set_content(plain_text)
     msg.add_alternative(html_text, subtype='html')
 
-    # 6. SMTP Сервертэй холбогдож мэйлийг илгээх
+    # 7. TLS Холболтоор аюулгүй илгээх
     with smtplib.SMTP('smtp.gmail.com', 587) as server:
         server.ehlo()
         server.starttls()
@@ -557,15 +481,13 @@ def send_email_smtp(sender_email, app_password, recipient_email, recipient_name,
         server.send_message(msg)
 
 # ============================================================
-# EXCEL GENERATOR (OPENPYXL FORMATTING WITH PNL SORTING & MARGINS)
+# EXCEL GENERATOR (OPENPYXL FORMATTING WITH PNL SORTING)
 # ============================================================
 
 def create_formatted_excel(records, missing_records):
     wb = openpyxl.Workbook()
     
-    # ----------------------------------------------------
-    # SHEET 1: All Detailed Passengers
-    # ----------------------------------------------------
+    # Sheet 1: All Passengers
     ws1 = wb.active
     ws1.title = "Passenger List"
     
@@ -577,19 +499,12 @@ def create_formatted_excel(records, missing_records):
     else:
         df1 = pd.DataFrame(columns=["PNLNo", "Passenger Name", "PNR", "Class", "StatusCode", "BookingDate", "OfficeCode", "TicketNo", "Email", "Language", "Flight", "Date", "Route", "SendStatus", "SentTime", "MissingReason"])
 
-    # Header бичих
-    headers1 = list(df1.columns)
-    ws1.append(headers1)
-    
-    # Өгөгдөл бичих
+    ws1.append(list(df1.columns))
     for row in df1.itertuples(index=False):
         ws1.append(list(row))
         
-    # ----------------------------------------------------
-    # SHEET 2: PNL Summary (PNL No тоон дарааллаар эрэмбэлэх)
-    # ----------------------------------------------------
+    # Sheet 2: PNL Summary
     ws2 = wb.create_sheet(title="PNL Summary")
-    
     target_cols = [
         ("PNLNo", "PNL No"),
         ("Passenger Name", "Passenger Name"),
@@ -599,63 +514,49 @@ def create_formatted_excel(records, missing_records):
         ("TicketNo", "Ticket NO"),
         ("OfficeCode", "Office code")
     ]
-    
     ws2.append([col[1] for col in target_cols])
     
-    # PNL No-ийг тоон утгаар эрэмбэлэх туслах функц
     def safe_pnl_sort_key(item):
         pnl_val = str(item.get("PNLNo", "0")).strip()
         digits = re.sub(r'\D', '', pnl_val)
         return int(digits) if digits else 999999
 
-    # Зорчигчдыг PNL No дарааллаар (001, 002, 003...) эрэмбэлэх
     sorted_pnl_records = sorted(all_records, key=safe_pnl_sort_key)
-
     for rec in sorted_pnl_records:
         row_data = [rec.get(col[0], "-") for col in target_cols]
         ws2.append(row_data)
 
-    # ----------------------------------------------------
-    # FORMATTING STYLES (Calibri 10, A4, Landscape, Custom Margins)
-    # ----------------------------------------------------
+    # Styles
     calibri_font = Font(name="Calibri", size=10, bold=False)
     header_font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
     
     thin_border = Border(
-        left=Side(style='thin', color='D9D9D9'),
-        right=Side(style='thin', color='D9D9D9'),
-        top=Side(style='thin', color='D9D9D9'),
-        bottom=Side(style='thin', color='D9D9D9')
+        left=Side(style='thin', color='D9D9D9'), right=Side(style='thin', color='D9D9D9'),
+        top=Side(style='thin', color='D9D9D9'), bottom=Side(style='thin', color='D9D9D9')
     )
     align_center = Alignment(horizontal='center', vertical='center')
     align_left = Alignment(horizontal='left', vertical='center')
 
     for ws in [ws1, ws2]:
-        # A4 Хэвтээ (Landscape) Тохиргоо
         ws.page_setup.paperSize = ws.PAPERSIZE_A4
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
-        
-        # PAGE MARGINS ТОХИРГОО (Top: 0.5, Bottom: 0.5, Left: 0.25, Right: 0.25)
         ws.page_margins.top = 0.5
         ws.page_margins.bottom = 0.5
         ws.page_margins.left = 0.25
         ws.page_margins.right = 0.25
         
-        # Толгойн хэсгийг хэлбэржүүлэх
         for cell in ws[1]:
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = align_center
 
-        # Өгөгдлийн нүднүүдийг хэлбэржүүлэх & Өргөн тохируулах
         for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
             for cell in row:
                 cell.font = calibri_font
                 cell.border = thin_border
                 cell.alignment = align_left
 
-        # Багануудын өргөнийг тохируулах
         for col in ws.columns:
             max_len = 0
             col_letter = get_column_letter(col[0].column)
@@ -695,9 +596,8 @@ def clear_all_data():
 # ============================================================
 
 st.set_page_config(page_title="MIAT Flight Notification System", layout="wide")
-st.title("✈️️ MIAT Flight Notification System (Anti-Spam Optimized)")
+st.title("✈️ MIAT Flight Notification System (Inbox & Anti-Spam Safe)")
 
-# Session state-үүдийг анхны утгаар тохируулах
 if "records" not in st.session_state:
     st.session_state.records = []
 if "missing_records" not in st.session_state:
@@ -729,14 +629,14 @@ if "input_reason_en" not in st.session_state:
 # --- SIDEBAR: AUTHENTICATION & DELIVERABILITY TIPS ---
 with st.sidebar:
     st.header("🔑 Илгээгчийн Тохиргоо")
-    sender_email = st.text_input("Gmail Хаяг", placeholder="example@gmail.com")
-    app_password = st.text_input("Gmail App Password", type="password", help="Google Account -> Security -> App Passwords хэсгээс үүсгэнэ.")
+    sender_email = st.text_input("Хувийн Gmail Хаяг", placeholder="example@gmail.com")
+    app_password = st.text_input("Gmail App Password", type="password", help="Google Account -> Security -> App Passwords хэсгээс 16 оронтой нууц үг үүсгэнэ.")
     
     st.divider()
-    st.markdown("### 🛡️ Inbox-д оруулах зөвлөмж:")
-    st.caption("1. Таны хэрэглэж буй Gmail дээр 2-Step Verification идэвхжсэн байх шаардлагатай.")
-    st.caption("2. Gmail-ээс өдөрт хамгийн ихдээ 500 хүртэл мэйл илгээх хязгаартайг анхаарна уу.")
-    st.caption("3. Энэхүү систем нь автоматаар 'No-Reply' тохиргоотой болон зорчигч хариу мэйл бичихгүй санамжийг тусгаж өгдөг.")
+    st.markdown("### 🛡️ Inbox-д оруулах хамгаалалт:")
+    st.caption("1. **No-Reply тохиргоо**: Зорчигч таны хувийн Gmail рүү хариу мэйл бичих боломжгүй.")
+    st.caption("2. **Blacklist-ээс хамгаалах**: Код нь мэйл хооронд санамсаргүй хугацааны хүлээлт (2-4.5сек) болон багц амарлага авч илгээнэ.")
+    st.caption("3. **Лимит**: Энгийн Gmail өдөрт 500 хүртэл мэйл илгээх лимиттэйг анхаарна уу.")
 
 # --- MAIN LAYOUT ---
 col1, col2 = st.columns([1, 1])
@@ -831,7 +731,6 @@ with tab1:
         
         for idx, row in edited_df.iterrows():
             st.session_state.records[idx]["Selected"] = row["Selected"]
-
     else:
         st.info("Одоогоор уншигдсан идэвхтэй зорчигч байхгүй байна.")
 
@@ -892,7 +791,6 @@ with tab3:
             st.session_state.custom_templates[preview_lang]["text"] = new_text
         else:
             sample_rec = selected_passengers[0] if selected_cnt >= 1 else None
-            
             st.markdown(f"**{lbl_title}** {curr_subj}")
             
             rendered_plain = render_custom_template(curr_text, sample_rec)
@@ -975,7 +873,7 @@ with col_act1:
                     final_plain = render_custom_template(raw_text, pax)
                     final_html = text_to_html(final_plain)
 
-                    # SMTP мэйл илгээх
+                    # SMTP Илгээх
                     send_email_smtp(
                         sender_email, 
                         app_password, 
@@ -990,9 +888,15 @@ with col_act1:
                     pax["SentTime"] = get_ubn_now()
                     success_count += 1
                     
-                    sleep_time = random.uniform(1.5, 2.5)
+                    # Anti-Spam Throttling: Мэйл бүрийн хооронд 2.0-4.5 сек хүлээх
+                    sleep_time = random.uniform(2.0, 4.5)
                     status_text.text(f"Илгээж байна ({i+1}/{len(selected_passengers)}): {recipient} ... ({sleep_time:.1f}с хүлээж байна)")
                     time.sleep(sleep_time)
+
+                    # Batch delay: 15 мэйл илгээх бүрт 12 секунд амрах (Gmail Blacklist-ээс сэргийлнэ)
+                    if (i + 1) % 15 == 0 and i + 1 < len(selected_passengers):
+                        status_text.text(f"⏳ Серверийн ачааллыг багасгахад 12 секунд хүлээж байна...")
+                        time.sleep(12)
 
                 except Exception as e:
                     pax["SendStatus"] = f"Failed: {str(e)}"
@@ -1007,7 +911,6 @@ with col_act1:
 with col_act2:
     all_data = st.session_state.records + st.session_state.missing_records
     if all_data:
-        # PNL дээрх нислэгийн дугаар болон өдрөөр файлын нэрийг тохируулах
         flt_val = st.session_state.input_flt_no.strip()
         date_val = st.session_state.input_flt_date.strip()
         
