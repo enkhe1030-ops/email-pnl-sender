@@ -556,7 +556,7 @@ def send_email_smtp(sender_email, app_password, recipient_email, recipient_name,
         server.send_message(msg)
 
 # ============================================================
-# EXCEL GENERATOR (OPENPYXL FORMATTING)
+# EXCEL GENERATOR (OPENPYXL FORMATTING WITH PNL SORTING)
 # ============================================================
 
 def create_formatted_excel(records, missing_records):
@@ -585,12 +585,10 @@ def create_formatted_excel(records, missing_records):
         ws1.append(list(row))
         
     # ----------------------------------------------------
-    # SHEET 2: PNL Summary (Хүссэн дарааллаар)
+    # SHEET 2: PNL Summary (PNL No тоон дарааллаар эрэмбэлэх)
     # ----------------------------------------------------
     ws2 = wb.create_sheet(title="PNL Summary")
     
-    # Шаардлагатай багануудын жагсаалт ба дараалал:
-    # PNL No, Passenger Name, PNR, Class, Booking date, Ticket NO, Office code
     target_cols = [
         ("PNLNo", "PNL No"),
         ("Passenger Name", "Passenger Name"),
@@ -603,7 +601,17 @@ def create_formatted_excel(records, missing_records):
     
     ws2.append([col[1] for col in target_cols])
     
-    for rec in all_records:
+    # PNL No-ийг тоон утгаар эрэмбэлэх туслах функц
+    def safe_pnl_sort_key(item):
+        pnl_val = str(item.get("PNLNo", "0")).strip()
+        # Зөвхөн цифрүүдийг авч тоо болгох (жишээ нь '001' -> 1)
+        digits = re.sub(r'\D', '', pnl_val)
+        return int(digits) if digits else 999999
+
+    # Зорчигчдыг PNL No дарааллаар (001, 002, 003...) эрэмбэлэх
+    sorted_pnl_records = sorted(all_records, key=safe_pnl_sort_key)
+
+    for rec in sorted_pnl_records:
         row_data = [rec.get(col[0], "-") for col in target_cols]
         ws2.append(row_data)
 
