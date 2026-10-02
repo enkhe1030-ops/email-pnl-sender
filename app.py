@@ -937,6 +937,7 @@ with tab5:
                         save_users(users)
                         add_log(st.session_state.user_info['username'], "Хэрэглэгч нэмсэн", details=f"Хэрэглэгч '{new_uname}' нэмэгдлээ")
                         st.success(f"Хэрэглэгч '{new_uname}' амжилттай нэмэгдлээ!")
+                        time.sleep(1)
                         st.rerun()
                 else:
                     st.warning("Нэвтрэх нэр болон нууц үгээ оруулна уу.")
@@ -956,10 +957,13 @@ with tab5:
                             users[uname]["password_hash"] = hash_password(new_reset_pass)
                             save_users(users)
                             add_log(st.session_state.user_info['username'], "Нууц үг шинэчилсэн", details=f"Хэрэглэгч '{uname}'-ийн нууц үгийг солов.")
-                            st.success(f"'{uname}' хэрэглэгчийн нууц үг амжилттай шинэчлэгдлээ!")
+                            
+                            # Амжилттай солигдсон мэдэгдэл харуулах
+                            st.success(f"✅ '{uname}' хэрэглэгчийн нууц үг амжилттай солигдлоо!")
+                            time.sleep(1.5)
                             st.rerun()
                         else:
-                            st.warning("Шинэ нууц үгээ оруулна уу.")
+                            st.warning("⚠️ Шинэ нууц үгээ оруулна уу.")
 
                 with u_col2:
                     st.write("")
@@ -972,6 +976,7 @@ with tab5:
                             save_users(users)
                             add_log(st.session_state.user_info['username'], "Хэрэглэгч устгасан", details=f"Хэрэглэгч '{uname}' устгагдлаа")
                             st.success(f"Хэрэглэгч '{uname}' устгагдлаа!")
+                            time.sleep(1)
                             st.rerun()
     else:
         st.info("Хэрэглэгч нэмэх, нууц үг шинэчлэх болон устгах эрх зөвхөн АДМИН хэрэглэгчид боломжтой.")
