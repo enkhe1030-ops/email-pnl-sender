@@ -337,9 +337,6 @@ def parse_pnl(text):
 
         joined_emails = ", ".join(emails_list) if emails_list else ""
         primary_lang = "MN" if "MN" in langs_list else ("EN" if "EN" in langs_list else "N/A")
-        
-        # SendLang нь тухайн зорчигчид сонгогдох хэл (EN эсвэл MN). N/A бол анхдагчаар MN байна, хэрэглэгч хүсвэл сольж болно.
-        initial_send_lang = primary_lang if primary_lang in ["MN", "EN"] else "MN"
 
         status = pax["Status Code"]
         missing_reasons = []
@@ -369,7 +366,6 @@ def parse_pnl(text):
             "Email": joined_emails if joined_emails else "ОЛДООГҮЙ",
             "EmailList": emails_list,
             "Language": primary_lang,
-            "SendLang": initial_send_lang,
             "Flight": pax["Flight"],
             "Date": pax["Date"],
             "Route": pax["Route"],
@@ -542,7 +538,7 @@ def create_formatted_excel(records, missing_records):
         cols_to_drop = ["Selected", "SeqNo", "EmailList"]
         df1 = df1.drop(columns=[c for c in cols_to_drop if c in df1.columns])
     else:
-        df1 = pd.DataFrame(columns=["PNLNo", "Passenger Name", "PNR", "Class", "StatusCode", "BookingDate", "OfficeCode", "TicketNo", "Email", "Language", "SendLang", "Flight", "Date", "Route", "SendStatus", "SentTime", "MissingReason"])
+        df1 = pd.DataFrame(columns=["PNLNo", "Passenger Name", "PNR", "Class", "StatusCode", "BookingDate", "OfficeCode", "TicketNo", "Email", "Language", "Flight", "Date", "Route", "SendStatus", "SentTime", "MissingReason"])
 
     ws1.append(list(df1.columns))
     for row in df1.itertuples(index=False):
@@ -792,6 +788,8 @@ with col2:
         reason_mn = rc1.text_input("Шалтгаан (MN):", placeholder="Техникийн саатал...", key="input_reason_mn")
         reason_en = rc2.text_input("Reason (EN):", placeholder="Technical reason...", key="input_reason_en")
 
+    na_action = st.radio("N/A Хэлтэй зорчигчийг авах хэл:", ["MN", "EN", "SKIP"], horizontal=True)
+
 flight_info = {
     "flight": flt_no,
     "date": flt_date,
@@ -822,18 +820,12 @@ with tab1:
             st.rerun()
 
         df_valid = pd.DataFrame(st.session_state.records)
-        cols_to_show = ["Selected", "SeqNo", "PNLNo", "Passenger Name", "PNR", "Class", "StatusCode", "BookingDate", "OfficeCode", "TicketNo", "Email", "Language", "SendLang", "SendStatus"]
+        cols_to_show = ["Selected", "SeqNo", "PNLNo", "Passenger Name", "PNR", "Class", "StatusCode", "BookingDate", "OfficeCode", "TicketNo", "Email", "Language", "SendStatus"]
         
         edited_df = st.data_editor(
             df_valid[cols_to_show],
             column_config={
-                "Selected": st.column_config.CheckboxColumn("Сонгох", default=True),
-                "SendLang": st.column_config.SelectboxColumn(
-                    "Илгээх хэл",
-                    options=["MN", "EN"],
-                    required=True,
-                    help="Тухайн зорчигчид илгээх мэйлийн хэл (N/A үед эндээс сонгоно)"
-                )
+                "Selected": st.column_config.CheckboxColumn("Сонгох", default=True)
             },
             disabled=["SeqNo", "PNLNo", "Passenger Name", "PNR", "Class", "StatusCode", "BookingDate", "OfficeCode", "TicketNo", "Email", "Language", "SendStatus"],
             hide_index=True,
@@ -843,7 +835,6 @@ with tab1:
         
         for idx, row in edited_df.iterrows():
             st.session_state.records[idx]["Selected"] = row["Selected"]
-            st.session_state.records[idx]["SendLang"] = row["SendLang"]
     else:
         st.info("Одоогоор уншигдсан идэвхтэй зорчигч байхгүй байна.")
 
@@ -862,10 +853,11 @@ total_pax = active_cnt + missing_cnt
 selected_passengers = [r for r in st.session_state.records if r.get("Selected", False)]
 selected_cnt = len(selected_passengers)
 
-mn_cnt = sum(1 for r in selected_passengers if r["SendLang"] == "MN")
-en_cnt = sum(1 for r in selected_passengers if r["SendLang"] == "EN")
+mn_cnt = sum(1 for r in selected_passengers if r["Language"] == "MN")
+en_cnt = sum(1 for r in selected_passengers if r["Language"] == "EN")
+na_cnt = sum(1 for r in selected_passengers if r["Language"] == "N/A")
 
-st.write(f"**Мэдээлэл:** 🇲🇳 MN мэйл: {mn_cnt} | 🇬🇧 EN мэйл: {en_cnt} | 🎯 Идэвхтэй: {selected_cnt}/{active_cnt} | ⚠️ Мэдээлэл Дутуу: {missing_cnt} | 👥 **Нийт зорчигчид:** {total_pax}")
+st.write(f"**Мэдээлэл:** 🔵 MN: {mn_cnt} | 🟢 EN: {en_cnt} | 🔴 N/A: {na_cnt} | 🎯 Идэвхтэй: {selected_cnt}/{active_cnt} | ⚠️ Мэдээлэл Дутуу: {missing_cnt} | 👥 **Нийт зорчигчид:** {total_pax}")
 
 with tab3:
     if selected_cnt == 0:
@@ -876,11 +868,260 @@ with tab3:
             preview_lang = st.radio("Preview Хэл:", ["MN", "EN"], horizontal=True)
         with col_p2:
             st.write("")
-            if st.button("✏ Засах" if not st.session_state.edit_mode else "👁️ Харж шалгах"):
+            if st.button("✏️️ Засах" if not st.session_state.edit_mode else "👁️ Харж шалгах"):
                 st.session_state.edit_mode = not st.session_state.edit_mode
                 st.rerun()
         with col_p3:
             st.write("")
             if st.session_state.custom_templates[preview_lang]["text"]:
                 if st.button("🔄 Анхны хувилбар"):
-                    st.session_
+                    st.session_state.custom_templates[preview_lang] = {"subject": "", "text": ""}
+                    st.session_state.edit_mode = False
+                    st.rerun()
+
+        orig_subj, orig_text = generate_email_text_base(preview_lang, flight_info)
+
+        curr_subj = st.session_state.custom_templates[preview_lang]["subject"] or orig_subj
+        curr_text = st.session_state.custom_templates[preview_lang]["text"] or orig_text
+
+        lbl_title = "ГАРЧИГ:" if preview_lang == "MN" else "SUBJECT:"
+
+        if st.session_state.edit_mode:
+            st.info("💡 Текст доторх `{PAX_NAME}`, `{PNR}`, `{TICKET_NO}` түлхүүр үгс нь зорчигч бүрийн мэдээллээр автоматаар солигдох болно.")
+            new_subj = st.text_input(f"{lbl_title}", value=curr_subj)
+            new_text = st.text_area("Засах боломжтой эх текст:", value=curr_text, height=320)
+            
+            st.session_state.custom_templates[preview_lang]["subject"] = new_subj
+            st.session_state.custom_templates[preview_lang]["text"] = new_text
+        else:
+            sample_rec = selected_passengers[0] if selected_cnt >= 1 else None
+            st.markdown(f"**{lbl_title}** {curr_subj}")
+            
+            rendered_plain = render_custom_template(curr_text, sample_rec)
+            rendered_html = text_to_html(rendered_plain)
+            st.components.v1.html(rendered_html, height=380, scrolling=True)
+
+# TAB 4: AUDIT LOG HISTORY
+with tab4:
+    st.subheader("📜 Имэйл илгээсэн болон системийн үйл ажиллагааны түүх")
+    if os.path.exists(LOGS_FILE):
+        df_logs = pd.read_csv(LOGS_FILE)
+        st.dataframe(df_logs.sort_index(ascending=False), use_container_width=True)
+    else:
+        st.info("Одоогоор лог түүх үүсээгүй байна.")
+
+# TAB 5: USER MANAGEMENT
+with tab5:
+    st.subheader("👥 Хэрэглэгчийн бүртгэл ба тохиргоо")
+    users = load_users()
+    
+    if st.session_state.user_info["role"] == "admin":
+        st.markdown("#### ➕ Шинэ хэрэглэгч нэмэх")
+        
+        with st.form("add_user_form", clear_on_submit=True):
+            c_u1, c_u2, c_u3 = st.columns([2, 2, 1])
+            new_uname = c_u1.text_input("Нэвтрэх нэр", key="form_new_uname")
+            new_pass = c_u2.text_input("Нууц үг", type="password", key="form_new_pass")
+            new_role = c_u3.selectbox("Эрх", ["user", "admin"], key="form_new_role")
+            
+            submitted = st.form_submit_button("Хэрэглэгч нэмэх", type="primary")
+            if submitted:
+                if new_uname and new_pass:
+                    if new_uname in users:
+                        st.error("Ийм нэвтрэх нэртэй хэрэглэгч аль хэдийн байна!")
+                    else:
+                        users[new_uname] = {
+                            "password_hash": hash_password(new_pass),
+                            "role": new_role
+                        }
+                        save_users(users)
+                        add_log(st.session_state.user_info['username'], "Хэрэглэгч нэмсэн", details=f"Хэрэглэгч '{new_uname}' нэмэгдлээ")
+                        st.success(f"Хэрэглэгч '{new_uname}' амжилттай нэмэгдлээ!")
+                        time.sleep(1)
+                        st.rerun()
+                else:
+                    st.warning("Нэвтрэх нэр болон нууц үгээ оруулна уу.")
+        
+        st.divider()
+        st.markdown("#### 📋 Бүртгэлтэй хэрэглэгчдийн жагсаалт ба удирдлага")
+        
+        for uname, udata in list(users.items()):
+            with st.expander(f"👤 {uname} (Эрх: {udata['role']})"):
+                u_col1, u_col2 = st.columns([3, 1])
+                
+                with u_col1:
+                    # Хэрэглэгчийн нууц үгийг шинэчлэн солих хэсэг
+                    new_reset_pass = st.text_input(f"Шинэ нууц үг тохируулах ({uname}):", type="password", key=f"reset_pass_{uname}")
+                    if st.button(f"🔑 Нууц үг солих", key=f"btn_reset_{uname}"):
+                        if new_reset_pass:
+                            users[uname]["password_hash"] = hash_password(new_reset_pass)
+                            save_users(users)
+                            add_log(st.session_state.user_info['username'], "Нууц үг шинэчилсэн", details=f"Хэрэглэгч '{uname}'-ийн нууц үгийг солов.")
+                            
+                            # Амжилттай солигдсон мэдэгдэл харуулах
+                            st.success(f"✅ '{uname}' хэрэглэгчийн нууц үг амжилттай солигдлоо!")
+                            time.sleep(1.5)
+                            st.rerun()
+                        else:
+                            st.warning("⚠️ Шинэ нууц үгээ оруулна уу.")
+
+                with u_col2:
+                    st.write("")
+                    st.write("")
+                    if uname == st.session_state.user_info['username']:
+                        st.caption("(Одоо нэвтэрсэн)")
+                    else:
+                        if st.button("🗑️ Устгах", key=f"del_{uname}"):
+                            del users[uname]
+                            save_users(users)
+                            add_log(st.session_state.user_info['username'], "Хэрэглэгч устгасан", details=f"Хэрэглэгч '{uname}' устгагдлаа")
+                            st.success(f"Хэрэглэгч '{uname}' устгагдлаа!")
+                            time.sleep(1)
+                            st.rerun()
+    else:
+        st.info("Хэрэглэгч нэмэх, нууц үг шинэчлэх болон устгах эрх зөвхөн АДМИН хэрэглэгчид боломжтой.")
+
+st.divider()
+
+# --- DIALOG / MODAL FOR CONFIRMATION ---
+@st.dialog("Имэйл текстийг шалгах ба Баталгаажуулах", width="large")
+def confirm_and_send_dialog():
+    st.warning("⚠️ Дараах имэйлийн эх текст зорчигчид руу илгээгдэх гэж байна. Шалгаад 'Илгээх' эсвэл 'Засах' товчийг сонгоно уу.")
+    
+    tab_mn, tab_en = st.tabs(["🇲🇳 Монгол (MN)", "🇬🇧 Англи (EN)"])
+    sample_rec = selected_passengers[0] if len(selected_passengers) >= 1 else None
+    
+    with tab_mn:
+        orig_subj, orig_text = generate_email_text_base("MN", flight_info)
+        s_subj = st.session_state.custom_templates["MN"]["subject"] or orig_subj
+        s_text = st.session_state.custom_templates["MN"]["text"] or orig_text
+        st.markdown(f"**ГАРЧИГ:** {s_subj}")
+        st.components.v1.html(text_to_html(render_custom_template(s_text, sample_rec)), height=280, scrolling=True)
+        
+    with tab_en:
+        orig_subj_en, orig_text_en = generate_email_text_base("EN", flight_info)
+        s_subj_en = st.session_state.custom_templates["EN"]["subject"] or orig_subj_en
+        s_text_en = st.session_state.custom_templates["EN"]["text"] or orig_text_en
+        st.markdown(f"**SUBJECT:** {s_subj_en}")
+        st.components.v1.html(text_to_html(render_custom_template(s_text_en, sample_rec)), height=280, scrolling=True)
+        
+    col_d1, col_d2 = st.columns([1, 1])
+    if col_d1.button("✅ Зөв, одоо илгээх", type="primary", use_container_width=True):
+        st.session_state.start_send_process = True
+        st.rerun()
+        
+    if col_d2.button("✏️ Засах шаардлагатай", use_container_width=True):
+        st.rerun()
+
+# --- ACTIONS: SEND & EXPORT ---
+col_act1, col_act2 = st.columns([2, 1])
+
+with col_act1:
+    if st.button("🚀 СОНГОСОН ЗОРЧИГЧИДОД ИМЭЙЛ ИЛГЭЭХ", type="primary", use_container_width=True):
+        if not sender_email or not app_password:
+            st.error("Систем нэвтрэх Gmail хаяг болон App Password оруулаагүй байна! Админ хэрэглэгчээр тохиргоог хадгална уу.")
+        elif not st.session_state.records:
+            st.warning("Илгээх зорчигч байхгүй байна.")
+        elif selected_cnt == 0:
+            st.warning("Нэг ч зорчигч сонгогдоогүй байна.")
+        else:
+            confirm_and_send_dialog()
+
+    if st.session_state.get("start_send_process", False):
+        st.session_state.start_send_process = False
+        success_count, fail_count = 0, 0
+        
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        for i, pax in enumerate(selected_passengers):
+            lang = pax["Language"]
+            if lang == "N/A":
+                if na_action == "SKIP":
+                    pax["SendStatus"] = "Skipped (N/A)"
+                    continue
+                lang = na_action
+
+            pax_name = pax.get("Passenger Name", "Passenger")
+
+            for recipient in pax.get("EmailList", []):
+                try:
+                    orig_subj, orig_text = generate_email_text_base(lang, flight_info)
+                    
+                    cust_subj = st.session_state.custom_templates[lang]["subject"]
+                    cust_text = st.session_state.custom_templates[lang]["text"]
+                    
+                    final_subj = cust_subj if cust_subj else orig_subj
+                    raw_text = cust_text if cust_text else orig_text
+                    
+                    final_plain = render_custom_template(raw_text, pax)
+                    final_html = text_to_html(final_plain)
+
+                    # SMTP Илгээх
+                    send_email_smtp(
+                        sender_email, 
+                        app_password, 
+                        recipient, 
+                        pax_name, 
+                        final_subj, 
+                        final_plain, 
+                        final_html
+                    )
+                    
+                    pax["SendStatus"] = "Sent Successfully"
+                    pax["SentTime"] = get_ubn_now()
+                    success_count += 1
+                    
+                    # Anti-Spam Throttling: Мэйл бүрийн хооронд 2.0-4.5 сек хүлээх
+                    sleep_time = random.uniform(2.0, 4.5)
+                    status_text.text(f"Илгээж байна ({i+1}/{len(selected_passengers)}): {recipient} ... ({sleep_time:.1f}с хүлээж байна)")
+                    time.sleep(sleep_time)
+
+                    # Batch delay: 15 мэйл илгээх бүрт 12 секунд амрах
+                    if (i + 1) % 15 == 0 and i + 1 < len(selected_passengers):
+                        status_text.text(f"⏳ Серверийн ачааллыг багасгахад 12 секунд хүлээж байна...")
+                        time.sleep(12)
+
+                except Exception as e:
+                    pax["SendStatus"] = f"Failed: {str(e)}"
+                    fail_count += 1
+            
+            progress_bar.progress((i + 1) / len(selected_passengers))
+
+        status_text.empty()
+        
+        # LOGS ТҮҮХЭД ХАДГАЛАХ
+        add_log(
+            st.session_state.user_info['username'], 
+            "Имэйл илгээсэн", 
+            flight_no=flt_no, 
+            route=route, 
+            details=f"Амжилттай: {success_count}, Амжилтгүй: {fail_count}"
+        )
+        
+        st.success(f"Ажиллагаа дууслаа! Нийт амжилттай: {success_count}, Амжилтгүй: {fail_count}")
+        st.rerun()
+
+with col_act2:
+    all_data = st.session_state.records + st.session_state.missing_records
+    if all_data:
+        flt_val = st.session_state.input_flt_no.strip()
+        date_val = st.session_state.input_flt_date.strip()
+        
+        if flt_val and date_val:
+            excel_filename = f"{flt_val}_{date_val}.xlsx"
+        elif flt_val:
+            excel_filename = f"{flt_val}_Report.xlsx"
+        else:
+            ubn_file_time = datetime.now(ZoneInfo("Asia/Ulaanbaatar")).strftime("%Y%m%d_%H%M%S")
+            excel_filename = f"PNL_Report_{ubn_file_time}.xlsx"
+
+        excel_data = create_formatted_excel(st.session_state.records, st.session_state.missing_records)
+
+        st.download_button(
+            label="📥 EXCEL тайлан татах",
+            data=excel_data,
+            file_name=excel_filename,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
