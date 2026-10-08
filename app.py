@@ -35,8 +35,112 @@ def load_users():
                 "password_hash": hash_password("admin123"),
                 "role": "admin"
             },
-            "operator1": {
-                "password_hash": hash_password("operator123"),
+            "Anujin": {
+                "password_hash": hash_password("Anuujin111"),
+                "role": "user"
+            },
+            "Bayartsetseg": {
+                "password_hash": hash_password("Bayartsetseg7854"),
+                "role": "user"
+            },
+            "Baigalmaa": {
+                "password_hash": hash_password("Baigalmaa"),
+                "role": "user"
+            },
+            "Buyka": {
+                "password_hash": hash_password("Buyka1234"),
+                "role": "user"
+            },
+            "Jagana": {
+                "password_hash": hash_password("Jagana333"),
+                "role": "user"
+            },
+            "Namuun": {
+                "password_hash": hash_password("Namuun999"),
+                "role": "user"
+            },
+            "Narangarav": {
+                "password_hash": hash_password("Narangarav987"),
+                "role": "user"
+            },
+            "Nyamtsetseg": {
+                "password_hash": hash_password("Nyamtsetseg2247"),
+                "role": "user"
+            },
+            "Odsuren": {
+                "password_hash": hash_password("Odsuren369"),
+                "role": "user"
+            },
+            "otgonbileg": {
+                "password_hash": hash_password("Otgonbileg4567"),
+                "role": "user"
+            },
+            "Sunderiya": {
+                "password_hash": hash_password("Sunderiya1234"),
+                "role": "user"
+            },
+            "Selenge": {
+                "password_hash": hash_password("Selenge4785"),
+                "role": "user"
+            },
+            "Uugantsetseg": {
+                "password_hash": hash_password("Uugantsetseg222"),
+                "role": "user"
+            },
+            "Uyaraa": {
+                "password_hash": hash_password("Uyaraa1265"),
+                "role": "user"
+            },
+            "Khulan": {
+                "password_hash": hash_password("Khulan6157"),
+                "role": "user"
+            },
+            "Tsetsegmaa": {
+                "password_hash": hash_password("Tsetsegmaa8541"),
+                "role": "user"
+            },
+            "Chuluuntsetseg": {
+                "password_hash": hash_password("Chuluuntsetseg976"),
+                "role": "user"
+            },
+            "Erdnetsetseg": {
+                "password_hash": hash_password("Erdnetsetseg7432"),
+                "role": "user"
+            },
+            "Enkhtuul": {
+                "password_hash": hash_password("Etu0610"),
+                "role": "user"
+            },
+            "Jargal": {
+                "password_hash": hash_password("Jargal2345"),
+                "role": "user"
+            },
+            "Maralmaa": {
+                "password_hash": hash_password("Maralmaa9711"),
+                "role": "user"
+            },
+            "Enkhtuya": {
+                "password_hash": hash_password("Enkhtuya2247"),
+                "role": "user"
+            },
+            "Unurjargal": {
+                "password_hash": hash_password("Unurjargal3346"),
+                "role": "user"
+            },
+            "Enkhamgalan": {
+                "password_hash": hash_password("Enkhamgalan7821"),
+                "role": "user"
+            },
+            "Javzandulam": {
+                "password_hash": hash_password("Javzandulam3954"),
+                "role": "user"
+            },
+            "Enkhmaa": {
+                "password_hash": hash_password("Enkhmaa3399"),
+                "role": "user"
+            },
+            "Enkhtsetseg": {
+                "password_hash": hash_password("Enkhtsetseg333999"),
                 "role": "user"
             }
         }
@@ -335,7 +439,6 @@ def parse_pnl(text):
         emails_list = list(pax["emails_dict"].keys())
         langs_list = list(pax["emails_dict"].values())
 
-        # Хэрэв мэйл дээр тодорхой MN эсвэл EN заагдсан бол автоматаар авна, үгүй бол N/A
         if "MN" in langs_list:
             primary_lang = "MN"
         elif "EN" in langs_list:
@@ -876,7 +979,7 @@ with tab3:
             preview_lang = st.radio("Preview Хэл:", ["MN", "EN"], horizontal=True)
         with col_p2:
             st.write("")
-            if st.button("✏ Засах" if not st.session_state.edit_mode else "👁️️ Харж шалгах"):
+            if st.button("✏ Засах" if not st.session_state.edit_mode else "👁 Харж шалгах"):
                 st.session_state.edit_mode = not st.session_state.edit_mode
                 st.rerun()
         with col_p3:
@@ -992,7 +1095,7 @@ st.divider()
 # --- DIALOG / MODAL FOR CONFIRMATION ---
 @st.dialog("Имэйл текстийг шалгах ба Баталгаажуулах", width="large")
 def confirm_and_send_dialog():
-    st.warning("⚠️️ Дараах имэйлийн эх текст зорчигчид руу илгээгдэх гэж байна. Шалгаад 'Илгээх' эсвэл 'Засах' товчийг сонгоно уу.")
+    st.warning("⚠ Дараах имэйлийн эх текст зорчигчид руу илгээгдэх гэж байна. Шалгаад 'Илгээх' эсвэл 'Засах' товчийг сонгоно уу.")
     
     tab_mn, tab_en = st.tabs(["🇲🇳 Монгол (MN)", "🇬🇧 Англи (EN)"])
     sample_rec = selected_passengers[0] if len(selected_passengers) >= 1 else None
@@ -1057,7 +1160,6 @@ with col_act1:
                     final_plain = render_custom_template(raw_text, pax)
                     final_html = text_to_html(final_plain)
 
-                    # SMTP Илгээх
                     send_email_smtp(
                         sender_email, 
                         app_password, 
