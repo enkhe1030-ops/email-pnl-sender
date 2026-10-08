@@ -200,7 +200,6 @@ def add_log(username, action, flight_no="", flight_date="", route="", details=""
         df_new.to_csv(LOGS_FILE, index=False, encoding="utf-8-sig")
     else:
         try:
-            # Хуучин форматын зөрүү гарвал шинээр үүсгэх эсвэл файлыг цэвэрлэхээс сэргийлж шалгана
             df_existing = pd.read_csv(LOGS_FILE, encoding="utf-8-sig")
             if list(df_existing.columns) != list(df_new.columns):
                 df_new.to_csv(LOGS_FILE, index=False, encoding="utf-8-sig")
@@ -722,3 +721,115 @@ def create_formatted_excel(records, missing_records):
 
         for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
             for cell in row:
+                cell.font = calibri_font
+                cell.border = thin_border
+                cell.alignment = align_left
+
+        for col in ws.columns:
+            max_len = 0
+            col_letter = get_column_letter(col[0].column)
+            for cell in col:
+                val = str(cell.value or '')
+                if len(val) > max_len:
+                    max_len = len(val)
+            ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    excel_buffer = io.BytesIO()
+    wb.save(excel_buffer)
+    excel_buffer.seek(0)
+    return excel_buffer
+
+# ============================================================
+# CLEAR ALL CALLBACK FUNCTION
+# ============================================================
+
+def clear_all_data():
+    st.session_state.records = []
+    st.session_state.missing_records = []
+    st.session_state.pnl_text = ""
+    st.session_state.pnl_textarea = ""
+    st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
+    st.session_state.edit_mode = False
+
+    st.session_state.input_flt_no = ""
+    st.session_state.input_flt_date = ""
+    st.session_state.input_route = ""
+    st.session_state.input_dep_time = ""
+    st.session_state.input_arr_time = ""
+    st.session_state.input_reason_mn = ""
+    st.session_state.input_reason_en = ""
+
+# ============================================================
+# STREAMLIT INITIALIZATION & AUTHENTICATION
+# ============================================================
+
+st.set_page_config(page_title="MIAT Flight Notification System", layout="wide")
+
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "user_info" not in st.session_state:
+    st.session_state.user_info = None
+
+# AUTHENTICATION SCREEN
+if not st.session_state.logged_in:
+    st.markdown("<h2 style='text-align: center;'>✈️ MIAT Flight Notification System</h2>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center;'>Системд нэвтрэх</h4>", unsafe_allow_html=True)
+    
+    col_l1, col_l2, col_l3 = st.columns([1, 1, 1])
+    with col_l2:
+        username_input = st.text_input("Нэвтрэх нэр (Username)")
+        password_input = st.text_input("Нууц үг (Password)", type="password")
+        
+        if st.button("Нэвтрэх", type="primary", use_container_width=True):
+            users = load_users()
+            hashed = hash_password(password_input)
+            
+            if username_input in users and users[username_input]["password_hash"] == hashed:
+                st.session_state.logged_in = True
+                st.session_state.user_info = {
+                    "username": username_input,
+                    "role": users[username_input]["role"]
+                }
+                add_log(username_input, "Нэвтэрсэн", details="Амжилттай нэвтэрлээ")
+                st.success("Амжилттай нэвтэрлээ!")
+                st.rerun()
+            else:
+                st.error("Нэвтрэх нэр эсвэл нууц үг буруу байна!")
+    st.stop()
+
+# ============================================================
+# MAIN APPLICATION (LOGGED IN)
+# ============================================================
+
+if "records" not in st.session_state:
+    st.session_state.records = []
+if "missing_records" not in st.session_state:
+    st.session_state.missing_records = []
+if "pnl_text" not in st.session_state:
+    st.session_state.pnl_text = ""
+if "pnl_textarea" not in st.session_state:
+    st.session_state.pnl_textarea = ""
+if "custom_templates" not in st.session_state:
+    st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
+if "edit_mode" not in st.session_state:
+    st.session_state.edit_mode = False
+
+if "input_flt_no" not in st.session_state:
+    st.session_state.input_flt_no = ""
+if "input_flt_date" not in st.session_state:
+    st.session_state.input_flt_date = ""
+if "input_route" not in st.session_state:
+    st.session_state.input_route = ""
+if "input_dep_time" not in st.session_state:
+    st.session_state.input_dep_time = ""
+if "input_arr_time" not in st.session_state:
+    st.session_state.input_arr_time = ""
+if "input_reason_mn" not in st.session_state:
+    st.session_state.input_reason_mn = ""
+if "input_reason_en" not in st.session_state:
+    st.session_state.input_reason_en = ""
+
+# --- SIDEBAR: AUTHENTICATION & SAVED CREDENTIALS ---
+with st.sidebar:
+    st.markdown(f"### 👤 Хэрэглэгч: **{st.session_state.user_info['username']}**")
+    st.caption(f"
