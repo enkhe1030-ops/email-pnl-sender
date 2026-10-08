@@ -184,7 +184,7 @@ def save_smtp_credentials(sender_email, app_password):
     with open(CREDENTIALS_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-def add_log(username, action, flight_no="", flight_date="", route="", details=""):
+def add_log(username, action, flight_no="", flight_date="", details=""):
     now_str = get_ubn_now()
     log_data = {
         "Timestamp": now_str,
@@ -192,7 +192,6 @@ def add_log(username, action, flight_no="", flight_date="", route="", details=""
         "Action": action,
         "Flight No": flight_no if flight_no else "-",
         "Flight Date": flight_date if flight_date else "-",
-        "Route": route if route else "-",
         "Details": details
     }
     df_new = pd.DataFrame([log_data])
@@ -200,7 +199,7 @@ def add_log(username, action, flight_no="", flight_date="", route="", details=""
         df_new.to_csv(LOGS_FILE, index=False, encoding="utf-8-sig")
     else:
         try:
-            df_existing = pd.read_csv(LOGS_FILE, encoding="utf-8-sig")
+            df_existing = pd.read_csv(LOGS_FILE, encoding="utf-8-sig", on_bad_lines="skip")
             if list(df_existing.columns) != list(df_new.columns):
                 df_new.to_csv(LOGS_FILE, index=False, encoding="utf-8-sig")
             else:
@@ -294,22 +293,6 @@ AIRPORT_NAMES = {
 def get_ubn_now():
     return datetime.now(ZoneInfo("Asia/Ulaanbaatar")).strftime("%Y-%m-%d %H:%M:%S")
 
-def get_route_text(route_str, lang="MN"):
-    if not route_str or "-" not in route_str:
-        return route_str, route_str
-
-    parts = route_str.strip().upper().split("-")
-    if len(parts) == 2:
-        dep_code, arr_code = parts[0], parts[1]
-        dep_name = AIRPORT_NAMES.get(dep_code, {}).get(lang, dep_code)
-        arr_name = AIRPORT_NAMES.get(arr_code, {}).get(lang, arr_code)
-
-        city_title = f"{dep_name} – {arr_name}"
-        full_route = f"{dep_name} ({dep_code}) – {arr_name} ({arr_code})"
-        return city_title, full_route
-
-    return route_str, route_str
-
 def format_date_custom(raw_date_str):
     if not raw_date_str:
         return "", "", ""
@@ -371,27 +354,29 @@ def is_valid_email(email):
     return bool(re.match(email_regex, email))
 
 # ============================================================
-# PARSE AMADEUS PNL
+# PARSE AMADEUS PNL (Сайжруулсан автомат уншилт)
 # ============================================================
 
 def parse_pnl(text):
     lines = text.splitlines()
-    flight_number, flight_date, route = "", "", ""
+    flight_number, flight_date = "", ""
 
+    # Загвар: LP/T*D*S/OM297/01NOV эсвэл ерөнхий толгой мөрөөс олох
     header_pattern = re.compile(
-        r"LP[A-Z0-9/\*]*S\(CTCE\)/([A-Z0-9]+)(?:/(\d{2}[A-Z]{3}\d{2}))?", re.IGNORECASE
+        r"(?:LP[A-Z0-9/\*]*S\(CTCE\)/|/)([A-Z0-9]{2,3}\d{1,4})(?:/(\d{2}[A-Z]{3}\d{2,4}))?", re.IGNORECASE
     )
-    route_pattern = re.compile(r"^\s*([A-Z]{3})([A-Z]{3})\s*$")
 
     for line in lines:
         header_match = header_pattern.search(line)
-        if header_match:
+        if header_match and not flight_number:
             flight_number = header_match.group(1).upper()
-            flight_date = (header_match.group(2) or "").upper()
-
-        route_match = route_pattern.match(line)
-        if route_match:
-            route = f"{route_match.group(1).upper()}-{route_match.group(2).upper()}"
+            if header_match.group(2):
+                flight_date = header_match.group(2).upper()
+        # Хэрэв шууд 01NOV гэх мэт огноо байвал нэмэлтээр шалгах
+        if not flight_date:
+            date_match = re.search(r"\b(\d{2}[A-Z]{3}\d{2,4})\b", line)
+            if date_match and ("OM" in line.upper() or "DZ" in line.upper() or "FLT" in line.upper() or "/" in line):
+                flight_date = date_match.group(1).upper()
 
     passenger_pattern = re.compile(
         r"^\s*(\d{1,3})[A-Z]?\s+(?:\*\d{1,2}|\d{1,2})?\s*(.+?)\s+([A-Z0-9]{5,8})(?:\s+([A-Z]))?\s+([A-Z]{2})\s+(\d{2}[A-Z]{3})\s*([A-Z0-9]+)?",
@@ -429,8 +414,7 @@ def parse_pnl(text):
                 "TicketNo": "-",
                 "emails_dict": {},
                 "Flight": flight_number,
-                "Date": flight_date,
-                "Route": route
+                "Date": flight_date
             }
             continue
 
@@ -497,7 +481,6 @@ def parse_pnl(text):
             "Language": primary_lang,
             "Flight": pax["Flight"],
             "Date": pax["Date"],
-            "Route": pax["Route"],
             "SendStatus": "Not Processed",
             "SentTime": "-",
             "MissingReason": ", ".join(missing_reasons)
@@ -525,7 +508,6 @@ def generate_email_text_base(target_lang, flight_info):
 
     flt_no = flight_info['flight'] if flight_info['flight'] else ""
     flt_date = flight_info['date'] if flight_info['date'] else ""
-    raw_route = flight_info['route'] if flight_info['route'] else ""
     dep_time = flight_info['dep_time']
     arr_time = flight_info['arr_time']
     reason_mn = flight_info.get('reason_mn', '')
@@ -533,36 +515,35 @@ def generate_email_text_base(target_lang, flight_info):
     status_type = flight_info['status_type']
 
     mn_dot_date, mn_dash_date, en_date = format_date_custom(flt_date) if flt_date else ("", "", "")
-    city_title, full_route_display = get_route_text(raw_route, lang=target_lang) if raw_route else ("", "")
 
     no_reply_footer_mn = "\n\n--------------------------------------------------\nЭнэхүү мэйл нь автоматаар илгээгдэж буй тул хариу бичих шаардлагагүй."
     no_reply_footer_en = "\n\n--------------------------------------------------\nThis is an automated message, please do not reply to this email."
 
     if target_lang == "MN":
         if status_type == "CANCEL":
-            subject = f"{mn_dot_date} –ний {city_title} {flt_no} нислэг цуцлагдсан тухай мэдэгдэл".strip()
-            body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэг цуцлагдсан болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nЦУЦЛАГДСАН НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}"
+            subject = f"{mn_dot_date} –ний {flt_no} нислэг цуцлагдсан тухай мэдэгдэл".strip()
+            body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай нислэг цуцлагдсан болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nЦУЦЛАГДСАН НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}"
             if dep_time: body += f"\n• Нисэх цаг: {dep_time}"
             if arr_time: body += f"\n• Буух цаг: {arr_time}"
             if reason_mn: body += f"\n• Шалтгаан: {reason_mn}"
             body += f"\n\nТийз буцаалт болон өөр өдрийн нислэгээр тийзээ өөрчилж баталгаажуулах талаар тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.\n\nДээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.\n\nХүндэтгэсэн,\nМИАТ ТӨХК{no_reply_footer_mn}"
         else:
-            subject = f"{mn_dot_date} –ний {city_title} {flt_no} нислэгийн хуваарийн өөрчлөлтийн тухай мэдэгдэл".strip()
-            body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай {full_route_display} чиглэлийн нислэгийн цагийн хуваарьт өөрчлөлт орсон болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nШИНЭ НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}\n• Чиглэл: {raw_route}"
+            subject = f"{mn_dot_date} –ний {flt_no} нислэгийн хуваарийн өөрчлөлтийн тухай мэдэгдэл".strip()
+            body = f"Хүндэт {pax_name},\n\nТаны {mn_dash_date}-ны өдрийн {flt_no} дугаартай нислэгийн цагийн хуваарьт өөрчлөлт орсон болохыг үүгээр мэдэгдэж байна.\n\nЗОРЧИГЧИЙН МЭДЭЭЛЭЛ:\n• Зорчигчийн нэр: {pax_name}\n• Захиалгын дугаар (PNR): {pnr_code}\n• Тийзийн дугаар: {tkt_no}\n\nШИНЭ НИСЛЭГИЙН МЭДЭЭЛЭЛ:\n• Нислэг: {flt_no}\n• Огноо: {flt_date}"
             if dep_time: body += f"\n• Нисэх цаг: {dep_time}"
             if arr_time: body += f"\n• Буух цаг: {arr_time}"
             body += f"\n\nТаны тийзийн төлөв байдал болон шинэ нислэгийн мэдээллийг баталгаажуулахын тулд тийз худалдан авсан аяллын агентлаг эсхүл тийз олгосон газартайгаа аль болох хурдан хугацаанд холбогдоно уу.\n\nДээрх өөрчлөлтөөс шалтгаалан Танд хүндрэл, чирэгдэл учруулж байгаад хүлцэл өчье.\n\nХүндэтгэсэн,\nМИАТ ТӨХК{no_reply_footer_mn}"
     else: 
         if status_type == "CANCEL":
-            subject = f"Flight Cancellation Notification - {flt_no} ({city_title}) - {en_date}".strip()
-            body = f"Dear {pax_name},\n\nWe regret to inform you that your flight {flt_no} {full_route_display}, scheduled for {en_date}, has been cancelled.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nCANCELLED FLIGHT DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}\n- Route: {raw_route}"
+            subject = f"Flight Cancellation Notification - {flt_no} - {en_date}".strip()
+            body = f"Dear {pax_name},\n\nWe regret to inform you that your flight {flt_no}, scheduled for {en_date}, has been cancelled.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nCANCELLED FLIGHT DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}"
             if dep_time: body += f"\n- Departure Time: {dep_time}"
             if arr_time: body += f"\n- Arrival Time: {arr_time}"
             if reason_en: body += f"\n- Reason: {reason_en}"
             body += f"\n\nFor ticket refund or to change and confirm your ticket for a flight on another date, please contact your travel agent or ticket issuing office as soon as possible.\n\nBest regards,\nMIAT Mongolian Airlines{no_reply_footer_en}"
         else:
-            subject = f"Flight Schedule Change Notification - {flt_no} ({city_title}) – {en_date}"
-            body = f"Dear {pax_name},\n\nWe regret to inform you of a schedule change for your flight {flt_no} {full_route_display} on {en_date}.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nNEW FLIGHT SCHEDULE DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}\n- Route: {raw_route}"
+            subject = f"Flight Schedule Change Notification - {flt_no} – {en_date}"
+            body = f"Dear {pax_name},\n\nWe regret to inform you of a schedule change for your flight {flt_no} on {en_date}.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nNEW FLIGHT SCHEDULE DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}"
             if dep_time: body += f"\n- Departure Time: {dep_time}"
             if arr_time: body += f"\n- Arrival Time: {arr_time}"
             body += f"\n\nPlease contact your travel agent or issuing office as soon as possible to confirm your flight details.\n\nBest regards,\nMIAT Mongolian Airlines{no_reply_footer_en}"
@@ -667,7 +648,7 @@ def create_formatted_excel(records, missing_records):
         cols_to_drop = ["Selected", "SeqNo", "EmailList"]
         df1 = df1.drop(columns=[c for c in cols_to_drop if c in df1.columns])
     else:
-        df1 = pd.DataFrame(columns=["PNLNo", "Passenger Name", "PNR", "Class", "StatusCode", "BookingDate", "OfficeCode", "TicketNo", "Email", "Language", "Flight", "Date", "Route", "SendStatus", "SentTime", "MissingReason"])
+        df1 = pd.DataFrame(columns=["PNLNo", "Passenger Name", "PNR", "Class", "StatusCode", "BookingDate", "OfficeCode", "TicketNo", "Email", "Language", "Flight", "Date", "SendStatus", "SentTime", "MissingReason"])
 
     ws1.append(list(df1.columns))
     for row in df1.itertuples(index=False):
@@ -753,7 +734,6 @@ def clear_all_data():
 
     st.session_state.input_flt_no = ""
     st.session_state.input_flt_date = ""
-    st.session_state.input_route = ""
     st.session_state.input_dep_time = ""
     st.session_state.input_arr_time = ""
     st.session_state.input_reason_mn = ""
@@ -818,8 +798,6 @@ if "input_flt_no" not in st.session_state:
     st.session_state.input_flt_no = ""
 if "input_flt_date" not in st.session_state:
     st.session_state.input_flt_date = ""
-if "input_route" not in st.session_state:
-    st.session_state.input_route = ""
 if "input_dep_time" not in st.session_state:
     st.session_state.input_dep_time = ""
 if "input_arr_time" not in st.session_state:
@@ -887,7 +865,6 @@ with col1:
             first_pax = st.session_state.records[0] if st.session_state.records else (st.session_state.missing_records[0] if st.session_state.missing_records else {})
             st.session_state.input_flt_no = first_pax.get("Flight", "")
             st.session_state.input_flt_date = first_pax.get("Date", "")
-            st.session_state.input_route = first_pax.get("Route", "")
             
             st.success("PNL амжилттай уншигдлаа!")
             st.rerun()
@@ -901,10 +878,9 @@ with col2:
     
     status_type = st.radio("Мэдэгдлийн төрөл:", ["CHANGE", "CANCEL"], format_func=lambda x: "Schedule Change (Өөрчлөгдсөн)" if x == "CHANGE" else "Flight Cancelled (Цуцлагдсан)", horizontal=True)
     
-    c1, c2, c3 = st.columns(3)
+    c1, c2 = st.columns(2)
     flt_no = c1.text_input("Flight No:", key="input_flt_no")
     flt_date = c2.text_input("Date:", key="input_flt_date")
-    route = c3.text_input("Route:", key="input_route")
     
     c4, c5 = st.columns(2)
     dep_time = c4.text_input("Dep Time:", placeholder="10:00", key="input_dep_time")
@@ -920,7 +896,6 @@ with col2:
 flight_info = {
     "flight": flt_no,
     "date": flt_date,
-    "route": route,
     "dep_time": dep_time,
     "arr_time": arr_time,
     "reason_mn": reason_mn,
@@ -1033,15 +1008,55 @@ with tab3:
             rendered_html = text_to_html(rendered_plain)
             st.components.v1.html(rendered_html, height=380, scrolling=True)
 
-# TAB 4: AUDIT LOG HISTORY
+# TAB 4: ADVANCED AUDIT LOG HISTORY (Шүүлтүүр, Статистик, Экспорт)
 with tab4:
-    st.subheader("📜 Имэйл илгээсэн болон системийн үйл ажиллагааны түүх")
+    st.subheader("📜 Үйл ажиллагааны түүх ба Шүүлтүүр")
+    
     if os.path.exists(LOGS_FILE):
         try:
             df_logs = pd.read_csv(LOGS_FILE, encoding="utf-8-sig", on_bad_lines="skip")
-            st.dataframe(df_logs.sort_index(ascending=False), use_container_width=True)
+            
+            if not df_logs.empty:
+                # Статистик карт хэсэг
+                col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+                col_m1.metric("Нийт үйлдэл", len(df_logs))
+                col_m2.metric("Нэвтэрсэн", len(df_logs[df_logs["Action"] == "Нэвтэрсэн"]))
+                col_m3.metric("Имэйл илгээсэн", len(df_logs[df_logs["Action"] == "Имэйл илгээсэн"]))
+                col_m4.metric("Excel татсан", len(df_logs[df_logs["Action"] == "Excel тайлан татсан"]))
+                
+                st.divider()
+                
+                # Шүүлтүүрийн хэсэг
+                f_c1, f_c2 = st.columns(2)
+                all_users_list = ["Бүгд"] + sorted(df_logs["Username"].unique().tolist()) if "Username" in df_logs.columns else ["Бүгд"]
+                all_actions_list = ["Бүгд"] + sorted(df_logs["Action"].unique().tolist()) if "Action" in df_logs.columns else ["Бүгд"]
+                
+                selected_user_filter = f_c1.selectbox("Хэрэглэгчээр шүүх:", all_users_list)
+                selected_action_filter = f_c2.selectbox("Үйлдлийн төрлөөр шүүх:", all_actions_list)
+                
+                filtered_df = df_logs.copy()
+                if selected_user_filter != "Бүгд":
+                    filtered_df = filtered_df[filtered_df["Username"] == selected_user_filter]
+                if selected_action_filter != "Бүгд":
+                    filtered_df = filtered_df[filtered_df["Action"] == selected_action_filter]
+                
+                st.dataframe(filtered_df.sort_index(ascending=False), use_container_width=True)
+                
+                # Түүхийг Excel файлаар татах товч
+                log_excel_buffer = io.BytesIO()
+                filtered_df.to_excel(log_excel_buffer, index=False, engine="openpyxl")
+                log_excel_buffer.seek(0)
+                
+                st.download_button(
+                    label="📥 Үйл ажиллагааны түүхийг Excel болгон татах",
+                    data=log_excel_buffer,
+                    file_name=f"Audit_Logs_{datetime.now(ZoneInfo('Asia/Ulaanbaatar')).strftime('%Y%m%d_%H%M%S')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            else:
+                st.info("Лог түүх хоосон байна.")
         except Exception:
-            st.warning("Лог файлыг уншихад алдаа гарлаа. Хэрэв форматын зөрүү гарсан бол `logs.csv` файлыг устгаад шинээр үүсгэнэ уу.")
+            st.warning("Лог файлыг уншихад алдаа гарлаа. `logs.csv` файлыг шинээр үүсгэнэ үү.")
     else:
         st.info("Одоогоор лог түүх үүсээгүй байна.")
 
@@ -1219,7 +1234,6 @@ with col_act1:
             "Имэйл илгээсэн", 
             flight_no=flt_no, 
             flight_date=flt_date,
-            route=route, 
             details=f"Нислэгийн огноо: {flt_date}, Амжилттай илгээсэн: {success_count} зорчигч, Алдаа гарсан: {fail_count}"
         )
         
@@ -1231,7 +1245,6 @@ with col_act2:
     if all_data:
         flt_val = st.session_state.input_flt_no.strip()
         date_val = st.session_state.input_flt_date.strip()
-        route_val = st.session_state.input_route.strip()
         
         if flt_val and date_val:
             excel_filename = f"{flt_val}_{date_val}.xlsx"
@@ -1255,6 +1268,5 @@ with col_act2:
                 "Excel тайлан татсан",
                 flight_no=flt_val if flt_val else "-",
                 flight_date=date_val if date_val else "-",
-                route=route_val if route_val else "-",
                 details=f"Нийт зорчигчдын тайлан татсан (Файлын нэр: {excel_filename})"
             )
