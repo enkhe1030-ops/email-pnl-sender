@@ -540,4 +540,74 @@ def generate_email_text_base(target_lang, flight_info):
             if reason_en: body += f"\n- Reason: {reason_en}"
             body += f"\n\nFor ticket refund or to change and confirm your ticket for a flight on another date, please contact your travel agent or ticket issuing office as soon as possible.\n\nBest regards,\nMIAT Mongolian Airlines{no_reply_footer_en}"
         else:
-            subject = f"Flight Schedule Change Notification - {flt_no} ({city_title
+            subject = f"Flight Schedule Change Notification - {flt_no} ({city_title}) – {en_date}".strip()
+            body = f"Dear {pax_name},\n\nWe regret to inform you of a schedule change for your flight {flt_no} {full_route_display} on {en_date}.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nNEW FLIGHT SCHEDULE DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}\n- Route: {raw_route}"
+            if dep_time: body += f"\n- Departure Time: {dep_time}"
+            if arr_time: body += f"\n- Arrival Time: {arr_time}"
+            body += f"\n\nPlease contact your travel agent or issuing office as soon as possible to confirm your flight details.\n\nBest regards,\nMIAT Mongolian Airlines{no_reply_footer_en}"
+
+    return subject, body
+
+def text_to_html(plain_text):
+    formatted = plain_text.replace('\n', '<br>')
+    formatted = re.sub(r'(\b[A-Z-0-9А-ЯӨҮөү\s]+:)', r'<b>\1</b>', formatted)
+    
+    html_wrapper = f"""
+    <!DOCTYPE html>
+    <html lang="mn">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {{
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 14px;
+                color: #222222;
+                line-height: 1.6;
+                background-color: #f9f9f9;
+                margin: 0;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 25px;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                background-color: #ffffff;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            {formatted}
+        </div>
+    </body>
+    </html>
+    """
+    return html_wrapper
+
+def render_custom_template(template_text, record):
+    pax_name = record.get('Passenger Name', '{PAX_NAME}') if record else "{PAX_NAME}"
+    pnr_code = record.get('PNR', '{PNR}') if record else "{PNR}"
+    tkt_no = record.get('TicketNo', '{TICKET_NO}') if record else "{TICKET_NO}"
+
+    rendered = template_text.replace("{PAX_NAME}", pax_name)
+    rendered = rendered.replace("{PNR}", pnr_code)
+    rendered = rendered.replace("{TICKET_NO}", tkt_no)
+    return rendered
+
+# ============================================================
+# HIGH DELIVERABILITY SMTP SENDER
+# ============================================================
+
+def send_email_smtp(sender_email, app_password, recipient_email, recipient_name, subject, plain_text, html_text):
+    msg = EmailMessage()
+    msg['Date'] = formatdate(localtime=True)
+    
+    unique_id = uuid.uuid4().hex
+    msg['Message-ID'] = f"<{unique_id}.notification@gmail.com>"
+    
+    msg['From'] = formataddr(("MIAT Mongolian Airlines Notification", sender_email))
+    msg['To'] = formataddr((recipient_name, recipient_email))
