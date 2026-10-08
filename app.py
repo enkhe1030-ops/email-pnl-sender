@@ -29,126 +29,140 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def load_users():
-    if not os.path.exists(USERS_FILE):
-        default_users = {
-            "admin": {
-                "password_hash": hash_password("admin123"),
-                "role": "admin"
-            },
-            "Anujin": {
-                "password_hash": hash_password("Anuujin111"),
-                "role": "user"
-            },
-            "Bayartsetseg": {
-                "password_hash": hash_password("Bayartsetseg7854"),
-                "role": "user"
-            },
-            "Baigalmaa": {
-                "password_hash": hash_password("Baigalmaa"),
-                "role": "user"
-            },
-            "Buyka": {
-                "password_hash": hash_password("Buyka1234"),
-                "role": "user"
-            },
-            "Jagana": {
-                "password_hash": hash_password("Jagana333"),
-                "role": "user"
-            },
-            "Namuun": {
-                "password_hash": hash_password("Namuun999"),
-                "role": "user"
-            },
-            "Narangarav": {
-                "password_hash": hash_password("Narangarav987"),
-                "role": "user"
-            },
-            "Nyamtsetseg": {
-                "password_hash": hash_password("Nyamtsetseg2247"),
-                "role": "user"
-            },
-            "Odsuren": {
-                "password_hash": hash_password("Odsuren369"),
-                "role": "user"
-            },
-            "otgonbileg": {
-                "password_hash": hash_password("Otgonbileg4567"),
-                "role": "user"
-            },
-            "Sunderiya": {
-                "password_hash": hash_password("Sunderiya1234"),
-                "role": "user"
-            },
-            "Selenge": {
-                "password_hash": hash_password("Selenge4785"),
-                "role": "user"
-            },
-            "Uugantsetseg": {
-                "password_hash": hash_password("Uugantsetseg222"),
-                "role": "user"
-            },
-            "Uyaraa": {
-                "password_hash": hash_password("Uyaraa1265"),
-                "role": "user"
-            },
-            "Khulan": {
-                "password_hash": hash_password("Khulan6157"),
-                "role": "user"
-            },
-            "Tsetsegmaa": {
-                "password_hash": hash_password("Tsetsegmaa8541"),
-                "role": "user"
-            },
-            "Chuluuntsetseg": {
-                "password_hash": hash_password("Chuluuntsetseg976"),
-                "role": "user"
-            },
-            "Erdnetsetseg": {
-                "password_hash": hash_password("Erdnetsetseg7432"),
-                "role": "user"
-            },
-            "Enkhtuul": {
-                "password_hash": hash_password("Etu0610"),
-                "role": "user"
-            },
-            "Jargal": {
-                "password_hash": hash_password("Jargal2345"),
-                "role": "user"
-            },
-            "Maralmaa": {
-                "password_hash": hash_password("Maralmaa9711"),
-                "role": "user"
-            },
-            "Enkhtuya": {
-                "password_hash": hash_password("Enkhtuya2247"),
-                "role": "user"
-            },
-            "Unurjargal": {
-                "password_hash": hash_password("Unurjargal3346"),
-                "role": "user"
-            },
-            "Enkhamgalan": {
-                "password_hash": hash_password("Enkhamgalan7821"),
-                "role": "user"
-            },
-            "Javzandulam": {
-                "password_hash": hash_password("Javzandulam3954"),
-                "role": "user"
-            },
-            "Enkhmaa": {
-                "password_hash": hash_password("Enkhmaa3399"),
-                "role": "user"
-            },
-            "Enkhtsetseg": {
-                "password_hash": hash_password("Enkhtsetseg333999"),
-                "role": "user"
-            }
+    default_users = {
+        "admin": {
+            "password_hash": hash_password("admin123"),
+            "role": "admin"
+        },
+        "Anujin": {
+            "password_hash": hash_password("Anuujin111"),
+            "role": "user"
+        },
+        "Bayartsetseg": {
+            "password_hash": hash_password("Bayartsetseg7854"),
+            "role": "user"
+        },
+        "Baigalmaa": {
+            "password_hash": hash_password("Baigalmaa"),
+            "role": "user"
+        },
+        "Buyka": {
+            "password_hash": hash_password("Buyka1234"),
+            "role": "user"
+        },
+        "Jagana": {
+            "password_hash": hash_password("Jagana333"),
+            "role": "user"
+        },
+        "Namuun": {
+            "password_hash": hash_password("Namuun999"),
+            "role": "user"
+        },
+        "Narangarav": {
+            "password_hash": hash_password("Narangarav987"),
+            "role": "user"
+        },
+        "Nyamtsetseg": {
+            "password_hash": hash_password("Nyamtsetseg2247"),
+            "role": "user"
+        },
+        "Odsuren": {
+            "password_hash": hash_password("Odsuren369"),
+            "role": "user"
+        },
+        "otgonbileg": {
+            "password_hash": hash_password("Otgonbileg4567"),
+            "role": "user"
+        },
+        "Sunderiya": {
+            "password_hash": hash_password("Sunderiya1234"),
+            "role": "user"
+        },
+        "Selenge": {
+            "password_hash": hash_password("Selenge4785"),
+            "role": "user"
+        },
+        "Uugantsetseg": {
+            "password_hash": hash_password("Uugantsetseg222"),
+            "role": "user"
+        },
+        "Uyaraa": {
+            "password_hash": hash_password("Uyaraa1265"),
+            "role": "user"
+        },
+        "Khulan": {
+            "password_hash": hash_password("Khulan6157"),
+            "role": "user"
+        },
+        "Tsetsegmaa": {
+            "password_hash": hash_password("Tsetsegmaa8541"),
+            "role": "user"
+        },
+        "Chuluuntsetseg": {
+            "password_hash": hash_password("Chuluuntsetseg976"),
+            "role": "user"
+        },
+        "Erdnetsetseg": {
+            "password_hash": hash_password("Erdnetsetseg7432"),
+            "role": "user"
+        },
+        "Enkhtuul": {
+            "password_hash": hash_password("Etu0610"),
+            "role": "user"
+        },
+        "Jargal": {
+            "password_hash": hash_password("Jargal2345"),
+            "role": "user"
+        },
+        "Maralmaa": {
+            "password_hash": hash_password("Maralmaa9711"),
+            "role": "user"
+        },
+        "Enkhtuya": {
+            "password_hash": hash_password("Enkhtuya2247"),
+            "role": "user"
+        },
+        "Unurjargal": {
+            "password_hash": hash_password("Unurjargal3346"),
+            "role": "user"
+        },
+        "Enkhamgalan": {
+            "password_hash": hash_password("Enkhamgalan7821"),
+            "role": "user"
+        },
+        "Javzandulam": {
+            "password_hash": hash_password("Javzandulam3954"),
+            "role": "user"
+        },
+        "Enkhmaa": {
+            "password_hash": hash_password("Enkhmaa3399"),
+            "role": "user"
+        },
+        "Enkhtsetseg": {
+            "password_hash": hash_password("Enkhtsetseg333999"),
+            "role": "user"
         }
+    }
+    
+    if not os.path.exists(USERS_FILE):
         save_users(default_users)
         return default_users
     
-    with open(USERS_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(USERS_FILE, "r", encoding="utf-8") as f:
+            users_dict = json.load(f)
+            # Шинэ хэрэглэгчид нэмэгдсэн эсэхийг шалгаад байхгүйг нэмж шинэчилнэ
+            updated = False
+            for k, v in default_users.items():
+                if k not in users_dict:
+                    users_dict[k] = v
+                    updated = True
+            if updated:
+                save_users(users_dict)
+            return users_dict
+    except Exception:
+        save_users(default_users)
+        return default_users
 
 def save_users(users_dict):
     with open(USERS_FILE, "w", encoding="utf-8") as f:
@@ -540,7 +554,7 @@ def generate_email_text_base(target_lang, flight_info):
             if reason_en: body += f"\n- Reason: {reason_en}"
             body += f"\n\nFor ticket refund or to change and confirm your ticket for a flight on another date, please contact your travel agent or ticket issuing office as soon as possible.\n\nBest regards,\nMIAT Mongolian Airlines{no_reply_footer_en}"
         else:
-            subject = f"Flight Schedule Change Notification - {flt_no} ({city_title}) – {en_date}".strip()
+            subject = f"Flight Schedule Change Notification - {flt_no} ({city_title}) – {en_date}"
             body = f"Dear {pax_name},\n\nWe regret to inform you of a schedule change for your flight {flt_no} {full_route_display} on {en_date}.\n\nPASSENGER DETAILS:\n- Passenger Name: {pax_name}\n- Booking Reference (PNR): {pnr_code}\n- Ticket Number: {tkt_no}\n\nNEW FLIGHT SCHEDULE DETAILS:\n- Flight: {flt_no}\n- Date: {flt_date}\n- Route: {raw_route}"
             if dep_time: body += f"\n- Departure Time: {dep_time}"
             if arr_time: body += f"\n- Arrival Time: {arr_time}"
@@ -1122,105 +1136,4 @@ def confirm_and_send_dialog():
     if col_d2.button("✏️ Засах шаардлагатай", use_container_width=True):
         st.rerun()
 
-# --- ACTIONS: SEND & EXPORT ---
-col_act1, col_act2 = st.columns([2, 1])
-
-with col_act1:
-    if st.button("🚀 СОНГОСОН ЗОРЧИГЧИДОД ИМЭЙЛ ИЛГЭЭХ", type="primary", use_container_width=True):
-        if not sender_email or not app_password:
-            st.error("Систем нэвтрэх Gmail хаяг болон App Password оруулаагүй байна! Админ хэрэглэгчээр тохиргоог хадгална уу.")
-        elif not st.session_state.records:
-            st.warning("Илгээх зорчигч байхгүй байна.")
-        elif selected_cnt == 0:
-            st.warning("Нэг ч зорчигч сонгогдоогүй байна.")
-        else:
-            confirm_and_send_dialog()
-
-    if st.session_state.get("start_send_process", False):
-        st.session_state.start_send_process = False
-        success_count, fail_count = 0, 0
-        
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        for i, pax in enumerate(selected_passengers):
-            lang = pax["Language"]
-            pax_name = pax.get("Passenger Name", "Passenger")
-
-            for recipient in pax.get("EmailList", []):
-                try:
-                    orig_subj, orig_text = generate_email_text_base(lang, flight_info)
-                    
-                    cust_subj = st.session_state.custom_templates[lang]["subject"]
-                    cust_text = st.session_state.custom_templates[lang]["text"]
-                    
-                    final_subj = cust_subj if cust_subj else orig_subj
-                    raw_text = cust_text if cust_text else orig_text
-                    
-                    final_plain = render_custom_template(raw_text, pax)
-                    final_html = text_to_html(final_plain)
-
-                    send_email_smtp(
-                        sender_email, 
-                        app_password, 
-                        recipient, 
-                        pax_name, 
-                        final_subj, 
-                        final_plain, 
-                        final_html
-                    )
-                    
-                    pax["SendStatus"] = "Sent Successfully"
-                    pax["SentTime"] = get_ubn_now()
-                    success_count += 1
-                    
-                    sleep_time = random.uniform(2.0, 4.5)
-                    status_text.text(f"Илгээж байна ({i+1}/{len(selected_passengers)}): {recipient} ... ({sleep_time:.1f}с хүлээж байна)")
-                    time.sleep(sleep_time)
-
-                    if (i + 1) % 15 == 0 and i + 1 < len(selected_passengers):
-                        status_text.text(f"⏳ Серверийн ачааллыг багасгахад 12 секунд хүлээж байна...")
-                        time.sleep(12)
-
-                except Exception as e:
-                    pax["SendStatus"] = f"Failed: {str(e)}"
-                    fail_count += 1
-            
-            progress_bar.progress((i + 1) / len(selected_passengers))
-
-        status_text.empty()
-        
-        add_log(
-            st.session_state.user_info['username'], 
-            "Имэйл илгээсэн", 
-            flight_no=flt_no, 
-            route=route, 
-            details=f"Амжилттай: {success_count}, Амжилтгүй: {fail_count}"
-        )
-        
-        st.success(f"Ажиллагаа дууслаа! Нийт амжилттай: {success_count}, Амжилтгүй: {fail_count}")
-        st.rerun()
-
-with col_act2:
-    all_data = st.session_state.records + st.session_state.missing_records
-    if all_data:
-        flt_val = st.session_state.input_flt_no.strip()
-        date_val = st.session_state.input_flt_date.strip()
-        
-        if flt_val and date_val:
-            excel_filename = f"{flt_val}_{date_val}.xlsx"
-        elif flt_val:
-            excel_filename = f"{flt_val}_Report.xlsx"
-        else:
-            ubn_file_time = datetime.now(ZoneInfo("Asia/Ulaanbaatar")).strftime("%Y%m%d_%H%M%S")
-            excel_filename = f"PNL_Report_{ubn_file_time}.xlsx"
-
-        excel_data = create_formatted_excel(st.session_state.records, st.session_state.missing_records)
-
-        st.download_button(
-            label="📥 EXCEL тайлан татах",
-            data=excel_data,
-            file_name=excel_filename,
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
+# --- ACTIONS: SEND &
