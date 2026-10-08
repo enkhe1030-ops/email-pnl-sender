@@ -151,7 +151,6 @@ def load_users():
     try:
         with open(USERS_FILE, "r", encoding="utf-8") as f:
             users_dict = json.load(f)
-            # Шинэ хэрэглэгчид нэмэгдсэн эсэхийг шалгаад байхгүйг нэмж шинэчилнэ
             updated = False
             for k, v in default_users.items():
                 if k not in users_dict:
@@ -185,14 +184,15 @@ def save_smtp_credentials(sender_email, app_password):
     with open(CREDENTIALS_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-def add_log(username, action, flight_no="", route="", details=""):
+def add_log(username, action, flight_no="", flight_date="", route="", details=""):
     now_str = get_ubn_now()
     log_data = {
         "Timestamp": now_str,
         "Username": username,
         "Action": action,
-        "Flight No": flight_no,
-        "Route": route,
+        "Flight No": flight_no if flight_no else "-",
+        "Flight Date": flight_date if flight_date else "-",
+        "Route": route if route else "-",
         "Details": details
     }
     df_new = pd.DataFrame([log_data])
@@ -1136,4 +1136,116 @@ def confirm_and_send_dialog():
     if col_d2.button("✏️ Засах шаардлагатай", use_container_width=True):
         st.rerun()
 
-# --- ACTIONS: SEND &
+# --- ACTIONS: SEND & EXPORT ---
+col_act1, col_act2 = st.columns([2, 1])
+
+with col_act1:
+    if st.button("🚀 СОНГОСОН ЗОРЧИГЧИДОД ИМЭЙЛ ИЛГЭЭХ", type="primary", use_container_width=True):
+        if not sender_email or not app_password:
+            st.error("Систем нэвтрэх Gmail хаяг болон App Password оруулаагүй байна! Админ хэрэглэгчээр тохиргоог хадгална уу.")
+        elif not st.session_state.records:
+            st.warning("Илгээх зорчигч байхгүй байна.")
+        elif selected_cnt == 0:
+            st.warning("Нэг ч зорчигч сонгогдоогүй байна.")
+        else:
+            confirm_and_send_dialog()
+
+    if st.session_state.get("start_send_process", False):
+        st.session_state.start_send_process = False
+        success_count, fail_count = 0, 0
+        
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        for i, pax in enumerate(selected_passengers):
+            lang = pax["Language"]
+            pax_name = pax.get("Passenger Name", "Passenger")
+
+            for recipient in pax.get("EmailList", []):
+                try:
+                    orig_subj, orig_text = generate_email_text_base(lang, flight_info)
+                    
+                    cust_subj = st.session_state.custom_templates[lang]["subject"]
+                    cust_text = st.session_state.custom_templates[lang]["text"]
+                    
+                    final_subj = cust_subj if cust_subj else orig_subj
+                    raw_text = cust_text if cust_text else orig_text
+                    
+                    final_plain = render_custom_template(raw_text, pax)
+                    final_html = text_to_html(final_plain)
+
+                    send_email_smtp(
+                        sender_email, 
+                        app_password, 
+                        recipient, 
+                        pax_name, 
+                        final_subj, 
+                        final_plain, 
+                        final_html
+                    )
+                    
+                    pax["SendStatus"] = "Sent Successfully"
+                    pax["SentTime"] = get_ubn_now()
+                    success_count += 1
+                    
+                    sleep_time = random.uniform(2.0, 4.5)
+                    status_text.text(f"Илгээж байна ({i+1}/{len(selected_passengers)}): {recipient} ... ({sleep_time:.1f}с хүлээж байна)")
+                    time.sleep(sleep_time)
+
+                    if (i + 1) % 15 == 0 and i + 1 < len(selected_passengers):
+                        status_text.text(f"⏳ Серверийн ачааллыг багасгахад 12 секунд хүлээж байна...")
+                        time.sleep(12)
+
+                except Exception as e:
+                    pax["SendStatus"] = f"Failed: {str(e)}"
+                    fail_count += 1
+            
+            progress_bar.progress((i + 1) / len(selected_passengers))
+
+        status_text.empty()
+        
+        add_log(
+            st.session_state.user_info['username'], 
+            "Имэйл илгээсэн", 
+            flight_no=flt_no, 
+            flight_date=flt_date,
+            route=route, 
+            details=f"Нислэгийн огноо: {flt_date}, Амжилттай илгээсэн: {success_count} зорчигч, Алдаа гарсан: {fail_count}"
+        )
+        
+        st.success(f"Ажиллагаа дууслаа! Нийт амжилттай: {success_count}, Амжилтгүй: {fail_count}")
+        st.rerun()
+
+with col_act2:
+    all_data = st.session_state.records + st.session_state.missing_records
+    if all_data:
+        flt_val = st.session_state.input_flt_no.strip()
+        date_val = st.session_state.input_flt_date.strip()
+        route_val = st.session_state.input_route.strip()
+        
+        if flt_val and date_val:
+            excel_filename = f"{flt_val}_{date_val}.xlsx"
+        elif flt_val:
+            excel_filename = f"{flt_val}_Report.xlsx"
+        else:
+            ubn_file_time = datetime.now(ZoneInfo("Asia/Ulaanbaatar")).strftime("%Y%m%d_%H%M%S")
+            excel_filename = f"PNL_Report_{ubn_file_time}.xlsx"
+
+        excel_data = create_formatted_excel(st.session_state.records, st.session_state.missing_records)
+
+        if st.download_button(
+            label="📥 EXCEL тайлан татах",
+            data=excel_data,
+            file_name=excel_filename,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        ):
+            # Excel тайлан татахад логт бүртгэх
+            add_log(
+                st.session_state.user_info['username'],
+                "Excel тайлан татсан",
+                flight_no=flt_val if flt_val else "-",
+                flight_date=date_val if date_val else "-",
+                route=route_val if route_val else "-",
+                details=f"Нийт зорчигчдын тайлан татсан (Файлын нэр: {excel_filename})"
+            )
