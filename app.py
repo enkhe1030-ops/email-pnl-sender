@@ -208,85 +208,6 @@ def add_log(username, action, flight_no="", flight_date="", details=""):
             df_new.to_csv(LOGS_FILE, index=False, encoding="utf-8-sig")
 
 # ============================================================
-# SETTINGS & DATA
-# ============================================================
-
-AIRPORT_NAMES = {
-    "UBN": {"MN": "Улаанбаатар", "EN": "Ulaanbaatar"},
-    "ULN": {"MN": "Улаанбаатар (Буянт-Ухаа)", "EN": "Ulaanbaatar (Old)"},
-    "HVD": {"MN": "Ховд", "EN": "Khovd"},
-    "ULG": {"MN": "Өлгий", "EN": "Olgii"},
-    "UGA": {"MN": "Улаангом", "EN": "Ulaangom"},
-    "UNR": {"MN": "Өндөрхаан (Чингис город)", "EN": "Undurkhaan"},
-    "DLZ": {"MN": "Даланзадгад", "EN": "Dalanzadgad"},
-    "LTI": {"MN": "Алтай", "EN": "Altai"},
-    "MWR": {"MN": "Мөрөн", "EN": "Moron"},
-    "UZZ": {"MN": "Улиастай (Донной)", "EN": "Uliastai"},
-    "COQ": {"MN": "Чойбалсан", "EN": "Choibalsan"},
-    "BYN": {"MN": "Баянхонгор", "EN": "Bayankhongor"},
-    "EAV": {"MN": "Алтат (Оюут толгой)", "EN": "Khanbumbat / Oyu Tolgoi"},
-    "THN": {"MN": "Таван толгой", "EN": "Tavan Tolgoi"},
-    "TST": {"MN": "Цагаан суварга", "EN": "Tsagaan Suvarga"},
-    "PST": {"MN": "Баян-Өндөр (Орхон)", "EN": "Erdenet"},
-    "TXN": {"MN": "Ташаанта", "EN": "Tashaanta"},
-
-    "ICN": {"MN": "Сөүл (Инчон)", "EN": "Seoul (Incheon)"},
-    "GMP": {"MN": "Сөүл (Кимпо)", "EN": "Seoul (Gimpo)"},
-    "PUS": {"MN": "Пусан", "EN": "Busan"},
-    "CJU": {"MN": "Чежу", "EN": "Jeju"},
-    "TAE": {"MN": "Тэгү", "EN": "Daegu"},
-    "CJJ": {"MN": "Чонжу", "EN": "Cheongju"},
-    "NRT": {"MN": "Токио (Нарита)", "EN": "Tokyo (Narita)"},
-    "HND": {"MN": "Токио (Ханеда)", "EN": "Tokyo (Haneda)"},
-    "KIX": {"MN": "Осака (Кансай)", "EN": "Osaka (Kansai)"},
-    "ITM": {"MN": "Осака (Итами)", "EN": "Osaka (Itami)"},
-    "NGO": {"MN": "Нагоя", "EN": "Nagoya"},
-    "CTS": {"MN": "Саппоро", "EN": "Sapporo"},
-    "FUK": {"MN": "Фукуока", "EN": "Fukuoka"},
-    "OKA": {"MN": "Окинава", "EN": "Okinawa"},
-    "PEK": {"MN": "Бээжин (Капитал)", "EN": "Beijing (Capital)"},
-    "PKX": {"MN": "Бээжин (Дашин)", "EN": "Beijing (Daxing)"},
-    "PVG": {"MN": "Шанхай (Пудон)", "EN": "Shanghai (Pudong)"},
-    "SHA": {"MN": "Шанхай (Хунчяо)", "EN": "Shanghai (Hongqiao)"},
-    "CAN": {"MN": "Гуанжоу", "EN": "Guangzhou"},
-    "SZX": {"MN": "Шэньчжэнь", "EN": "Shenzhen"},
-    "CTU": {"MN": "Чэнду", "EN": "Chengdu"},
-    "CKG": {"MN": "Чунцин", "EN": "Chongqing"},
-    "KMG": {"MN": "Куньмин", "EN": "Kunming"},
-    "XIY": {"MN": "Сиань", "EN": "Xi'an"},
-    "HET": {"MN": "Хөх хот", "EN": "Hohhot"},
-    "DSN": {"MN": "Ордос", "EN": "Ordos"},
-    "EER": {"MN": "Эрээн", "EN": "Erenhot"},
-    "SYX": {"MN": "Санья (Хайнань)", "EN": "Sanya (Hainan)"},
-    "HAK": {"MN": "Хайкоу (Хайнань)", "EN": "Haikou (Hainan)"},
-    "HKG": {"MN": "Хонконг", "EN": "Hong Kong"},
-    "MFM": {"MN": "Макао", "EN": "Macau"},
-    "TPE": {"MN": "Тайбэй (Таоюань)", "EN": "Taipei (Taoyuan)"},
-
-    "BKK": {"MN": "Бангкок (Суварнабхуми)", "EN": "Bangkok (Suvarnabhumi)"},
-    "DMK": {"MN": "Бангкок (Дон Мыанг)", "EN": "Bangkok (Don Mueang)"},
-    "HKT": {"MN": "Пүкэт", "EN": "Phuket"},
-    "SIN": {"MN": "Сингапур (Чанги)", "EN": "Singapore (Changi)"},
-    "KUL": {"MN": "Куала Лумпур", "EN": "Kuala Lumpur"},
-    "SGN": {"MN": "Хо Ши Мин", "EN": "Ho Chi Minh City"},
-    "HAN": {"MN": "Ханой", "EN": "Hanoi"},
-    "DAD": {"MN": "Да Nang", "EN": "Da Nang"},
-    "PQC": {"MN": "Фү Куок", "EN": "Phu Quoc"},
-    "MNL": {"MN": "Манила", "EN": "Manila"},
-    "CEB": {"MN": "Себу", "EN": "Cebu"},
-    "CGK": {"MN": "Жакарта", "EN": "Jakarta"},
-    "DPS": {"MN": "Бали (Денпасар)", "EN": "Bali (Denpasar)"},
-
-    "FRA": {"MN": "Франкфурт", "EN": "Frankfurt"},
-    "BER": {"MN": "Берлин", "EN": "Berlin"},
-    "MUC": {"MN": "Мюнхен", "EN": "Munich"},
-    "LHR": {"MN": "Лондон (Хитроу)", "EN": "London (Heathrow)"},
-    "IST": {"MN": "Истанбул", "EN": "Istanbul"},
-    "SVO": {"MN": "Москва (Шереметьево)", "EN": "Moscow (Sheremetyevo)"},
-    "IKT": {"MN": "Иркутск", "EN": "Irkutsk"}
-}
-
-# ============================================================
 # HELPER FUNCTIONS
 # ============================================================
 
@@ -354,30 +275,11 @@ def is_valid_email(email):
     return bool(re.match(email_regex, email))
 
 # ============================================================
-# PARSE AMADEUS PNL (Сайжруулсан автомат уншилт)
+# PARSE AMADEUS PNL (Зөвхөн зорчигч унших зориулалттай)
 # ============================================================
 
 def parse_pnl(text):
     lines = text.splitlines()
-    flight_number, flight_date = "", ""
-
-    # Загвар: LP/T*D*S/OM297/01NOV эсвэл ерөнхий толгой мөрөөс олох
-    header_pattern = re.compile(
-        r"(?:LP[A-Z0-9/\*]*S\(CTCE\)/|/)([A-Z0-9]{2,3}\d{1,4})(?:/(\d{2}[A-Z]{3}\d{2,4}))?", re.IGNORECASE
-    )
-
-    for line in lines:
-        header_match = header_pattern.search(line)
-        if header_match and not flight_number:
-            flight_number = header_match.group(1).upper()
-            if header_match.group(2):
-                flight_date = header_match.group(2).upper()
-        # Хэрэв шууд 01NOV гэх мэт огноо байвал нэмэлтээр шалгах
-        if not flight_date:
-            date_match = re.search(r"\b(\d{2}[A-Z]{3}\d{2,4})\b", line)
-            if date_match and ("OM" in line.upper() or "DZ" in line.upper() or "FLT" in line.upper() or "/" in line):
-                flight_date = date_match.group(1).upper()
-
     passenger_pattern = re.compile(
         r"^\s*(\d{1,3})[A-Z]?\s+(?:\*\d{1,2}|\d{1,2})?\s*(.+?)\s+([A-Z0-9]{5,8})(?:\s+([A-Z]))?\s+([A-Z]{2})\s+(\d{2}[A-Z]{3})\s*([A-Z0-9]+)?",
         re.IGNORECASE
@@ -412,9 +314,7 @@ def parse_pnl(text):
                 "Booking Date": booking_date,
                 "OfficeCode": office_code,
                 "TicketNo": "-",
-                "emails_dict": {},
-                "Flight": flight_number,
-                "Date": flight_date
+                "emails_dict": {}
             }
             continue
 
@@ -479,8 +379,6 @@ def parse_pnl(text):
             "Email": ", ".join(emails_list) if emails_list else "ОЛДООГҮЙ",
             "EmailList": emails_list,
             "Language": primary_lang,
-            "Flight": pax["Flight"],
-            "Date": pax["Date"],
             "SendStatus": "Not Processed",
             "SentTime": "-",
             "MissingReason": ", ".join(missing_reasons)
@@ -648,7 +546,7 @@ def create_formatted_excel(records, missing_records):
         cols_to_drop = ["Selected", "SeqNo", "EmailList"]
         df1 = df1.drop(columns=[c for c in cols_to_drop if c in df1.columns])
     else:
-        df1 = pd.DataFrame(columns=["PNLNo", "Passenger Name", "PNR", "Class", "StatusCode", "BookingDate", "OfficeCode", "TicketNo", "Email", "Language", "Flight", "Date", "SendStatus", "SentTime", "MissingReason"])
+        df1 = pd.DataFrame(columns=["PNLNo", "Passenger Name", "PNR", "Class", "StatusCode", "BookingDate", "OfficeCode", "TicketNo", "Email", "Language", "SendStatus", "SentTime", "MissingReason"])
 
     ws1.append(list(df1.columns))
     for row in df1.itertuples(index=False):
@@ -765,6 +663,20 @@ if not st.session_state.logged_in:
             hashed = hash_password(password_input)
             
             if username_input in users and users[username_input]["password_hash"] == hashed:
+                # Хэрэглэгч солигдоход эсвэл шинээр нэвтрэхэд өмнөх ажлын талбарын мэдээллийг бүрэн цэвэрлэх
+                st.session_state.records = []
+                st.session_state.missing_records = []
+                st.session_state.pnl_text = ""
+                st.session_state.pnl_textarea = ""
+                st.session_state.custom_templates = {"MN": {"subject": "", "text": ""}, "EN": {"subject": "", "text": ""}}
+                st.session_state.edit_mode = False
+                st.session_state.input_flt_no = ""
+                st.session_state.input_flt_date = ""
+                st.session_state.input_dep_time = ""
+                st.session_state.input_arr_time = ""
+                st.session_state.input_reason_mn = ""
+                st.session_state.input_reason_en = ""
+
                 st.session_state.logged_in = True
                 st.session_state.user_info = {
                     "username": username_input,
@@ -816,6 +728,10 @@ with st.sidebar:
         add_log(st.session_state.user_info['username'], "Гарсан", details="Системээс гарлаа")
         st.session_state.logged_in = False
         st.session_state.user_info = None
+        # Системээс гарах үед бас ажлын талбарын утгуудыг цэвэрлэх
+        st.session_state.records = []
+        st.session_state.missing_records = []
+        st.session_state.pnl_textarea = ""
         st.rerun()
 
     st.divider()
@@ -861,11 +777,6 @@ with col1:
         if pnl_input.strip():
             st.session_state.pnl_text = pnl_input
             st.session_state.records, st.session_state.missing_records = parse_pnl(pnl_input)
-            
-            first_pax = st.session_state.records[0] if st.session_state.records else (st.session_state.missing_records[0] if st.session_state.missing_records else {})
-            st.session_state.input_flt_no = first_pax.get("Flight", "")
-            st.session_state.input_flt_date = first_pax.get("Date", "")
-            
             st.success("PNL амжилттай уншигдлаа!")
             st.rerun()
         else:
@@ -879,8 +790,8 @@ with col2:
     status_type = st.radio("Мэдэгдлийн төрөл:", ["CHANGE", "CANCEL"], format_func=lambda x: "Schedule Change (Өөрчлөгдсөн)" if x == "CHANGE" else "Flight Cancelled (Цуцлагдсан)", horizontal=True)
     
     c1, c2 = st.columns(2)
-    flt_no = c1.text_input("Flight No:", key="input_flt_no")
-    flt_date = c2.text_input("Date:", key="input_flt_date")
+    flt_no = c1.text_input("Flight No:", key="input_flt_no", placeholder="OM297")
+    flt_date = c2.text_input("Date:", key="input_flt_date", placeholder="01NOV")
     
     c4, c5 = st.columns(2)
     dep_time = c4.text_input("Dep Time:", placeholder="10:00", key="input_dep_time")
@@ -1017,7 +928,6 @@ with tab4:
             df_logs = pd.read_csv(LOGS_FILE, encoding="utf-8-sig", on_bad_lines="skip")
             
             if not df_logs.empty:
-                # Статистик карт хэсэг
                 col_m1, col_m2, col_m3, col_m4 = st.columns(4)
                 col_m1.metric("Нийт үйлдэл", len(df_logs))
                 col_m2.metric("Нэвтэрсэн", len(df_logs[df_logs["Action"] == "Нэвтэрсэн"]))
@@ -1026,7 +936,6 @@ with tab4:
                 
                 st.divider()
                 
-                # Шүүлтүүрийн хэсэг
                 f_c1, f_c2 = st.columns(2)
                 all_users_list = ["Бүгд"] + sorted(df_logs["Username"].unique().tolist()) if "Username" in df_logs.columns else ["Бүгд"]
                 all_actions_list = ["Бүгд"] + sorted(df_logs["Action"].unique().tolist()) if "Action" in df_logs.columns else ["Бүгд"]
@@ -1042,7 +951,6 @@ with tab4:
                 
                 st.dataframe(filtered_df.sort_index(ascending=False), use_container_width=True)
                 
-                # Түүхийг Excel файлаар татах товч
                 log_excel_buffer = io.BytesIO()
                 filtered_df.to_excel(log_excel_buffer, index=False, engine="openpyxl")
                 log_excel_buffer.seek(0)
