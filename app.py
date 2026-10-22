@@ -31,7 +31,11 @@ def hash_password(password):
 def load_users():
     default_users = {
         "admin": {
-            "password_hash": hash_password("Admin12345+"),
+            "password_hash": hash_password("Admin12345."),
+            "role": "admin"
+        },
+        "Enkhbayar": {
+            "password_hash": hash_password("Enkhe.b1030"),
             "role": "admin"
         },
         "Anujin": {
@@ -156,6 +160,16 @@ def load_users():
                 if k not in users_dict:
                     users_dict[k] = v
                     updated = True
+            # Тусгайлан admin нууц үг болон Enkhbayar хэрэглэгчийг users.json дээр шинэчлэх хэсэг
+            if users_dict.get("admin", {}).get("password_hash") != hash_password("Admin12345."):
+                users_dict["admin"]["password_hash"] = hash_password("Admin12345.")
+                updated = True
+            if "Enkhbayar" not in users_dict:
+                users_dict["Enkhbayar"] = {
+                    "password_hash": hash_password("Enkhe.b1030"),
+                    "role": "admin"
+                }
+                updated = True
             if updated:
                 save_users(users_dict)
             return users_dict
