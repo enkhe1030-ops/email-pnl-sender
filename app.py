@@ -31,7 +31,7 @@ def hash_password(password):
 def load_users():
     default_users = {
         "admin": {
-            "password_hash": hash_password("admin123"),
+            "password_hash": hash_password("Admin12345."),
             "role": "admin"
         },
         "Anujin": {
