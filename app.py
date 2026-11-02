@@ -106,7 +106,7 @@ def load_users():
             "password_hash": hash_password("Chuluuntsetseg976"),
             "role": "user"
         },
-        "Erdnetsetseg": {
+        "Erdenetsetseg": {
             "password_hash": hash_password("Erka7432"),
             "role": "user"
         },
