@@ -67,7 +67,7 @@ def load_users():
             "role": "user"
         },
         "Nyamtsetseg": {
-            "password_hash": hash_password("Nyamtsetseg2247"),
+            "password_hash": hash_password("Nyamka123"),
             "role": "user"
         },
         "Odsuren": {
@@ -79,7 +79,7 @@ def load_users():
             "role": "user"
         },
         "Sunderiya": {
-            "password_hash": hash_password("Sunderiya1234"),
+            "password_hash": hash_password("Suugii123"),
             "role": "user"
         },
         "Selenge": {
